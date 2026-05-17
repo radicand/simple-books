@@ -5,12 +5,42 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { genericOAuth } from 'better-auth/plugins'
 import { sql } from 'drizzle-orm'
 import { db } from '~/db/client'
+import { user } from '~/db/auth-schema'
 import * as authSchema from '~/db/auth-schema'
 
 const oidcConfigured =
   !!process.env.OIDC_ISSUER_URL &&
   !!process.env.OIDC_CLIENT_ID &&
   !!process.env.OIDC_CLIENT_SECRET
+
+/** Case-insensitive email lookup for OIDC ↔ local account linking. */
+async function findUserByEmailInsensitive(
+  email: string,
+): Promise<{ email: string } | null> {
+  const normalized = email.toLowerCase()
+  const rows = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(sql`lower(${user.email}) = ${normalized}`)
+    .limit(1)
+  return rows[0] ?? null
+}
+
+/**
+ * Email passed to Better Auth's OAuth user lookup. When the IdP email does not
+ * match the sole owner (e.g. legacy email/password bootstrap), map to that
+ * user's email so trusted-provider account linking runs instead of user create.
+ */
+async function resolveOidcLinkEmail(oidcEmail: string): Promise<string> {
+  const normalized = oidcEmail.toLowerCase()
+  const existing = await findUserByEmailInsensitive(normalized)
+  if (existing) return existing.email.toLowerCase()
+
+  const owners = await db.select({ email: user.email }).from(user)
+  if (owners.length === 1) return owners[0]!.email.toLowerCase()
+
+  return normalized
+}
 
 const plugins = []
 
@@ -28,6 +58,14 @@ if (oidcConfigured) {
             `${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/oauth2/callback/oidc`,
           scopes: ['openid', 'email', 'profile'],
           pkce: true,
+          mapProfileToUser: async (profile) => {
+            const raw =
+              typeof profile.email === 'string' ? profile.email : undefined
+            if (!raw) return profile
+            const linkEmail = await resolveOidcLinkEmail(raw)
+            if (linkEmail === raw.toLowerCase()) return profile
+            return { ...profile, email: linkEmail }
+          },
         },
       ],
     }),

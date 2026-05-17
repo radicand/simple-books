@@ -39,7 +39,8 @@ When `OIDC_*` is configured, `account.accountLinking` sets `trustedProviders: ['
 and `requireLocalEmailVerified: false` (local email verification is off in MVP).
 
 - **New email at IdP** → Better Auth creates a user on first successful OIDC callback (only while `user` count is 0, unless IdP adds more users after bootstrap — operators control IdP membership).
-- **Existing email** (e.g. owner created via email/password before OIDC was enabled) → OIDC account links to that user when IdP email matches.
+- **Existing email** (e.g. owner created via email/password before OIDC was enabled) → OIDC account links to that user when IdP email matches (case-insensitive).
+- **Single owner, different IdP email** → `mapProfileToUser` in `auth.ts` maps the OIDC profile to the sole `user` row so trusted-provider linking runs (one install = one owner).
 
 Operators control who can sign in via the IdP. Trust the IdP: a malicious IdP that issues arbitrary emails could link to the owner account.
 

@@ -4,12 +4,15 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { authClient } from '~/lib/auth-client'
 import { getSession, getAuthConfig } from '~/lib/auth.functions'
 import { Button, Card, CardBody, Field, Input } from '~/components/ui'
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    error: typeof search.error === 'string' ? search.error : undefined,
+  }),
   beforeLoad: async () => {
     const session = await getSession()
     if (session) throw redirect({ to: '/dashboard' })
@@ -18,8 +21,13 @@ export const Route = createFileRoute('/login')({
   component: LoginPage,
 })
 
+function formatOAuthCallbackError(raw: string): string {
+  return decodeURIComponent(raw).replace(/_/g, ' ')
+}
+
 function LoginPage() {
   const cfg = Route.useLoaderData()
+  const { error: callbackError } = Route.useSearch()
   const router = useRouter()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -27,6 +35,12 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (callbackError) {
+      setError(formatOAuthCallbackError(callbackError))
+    }
+  }, [callbackError])
 
   const needsFirstUser = cfg.needsFirstUser
   const showEmailForm = cfg.emailAuthEnabled
