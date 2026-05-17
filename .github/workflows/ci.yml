@@ -62,14 +62,7 @@ jobs:
             > /dev/null
 
       - name: Docker build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          load: true
-          tags: simple-books:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: docker build -t simple-books:ci .
 
       - name: Install Playwright Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
