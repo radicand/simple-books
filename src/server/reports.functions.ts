@@ -22,18 +22,12 @@ export const getBalanceSheet = createServerFn({ method: 'GET' }).middleware([req
         name: chartAccounts.name,
         type: chartAccounts.type,
         normal: chartAccounts.normal,
-        dr: sql<number>`COALESCE(SUM(${journalLines.debitCents}),0)`,
-        cr: sql<number>`COALESCE(SUM(${journalLines.creditCents}),0)`,
+        dr: sql<number>`COALESCE(SUM(CASE WHEN ${journalEntries.id} IS NOT NULL AND ${journalEntries.date} <= ${asOf} THEN ${journalLines.debitCents} ELSE 0 END), 0)`,
+        cr: sql<number>`COALESCE(SUM(CASE WHEN ${journalEntries.id} IS NOT NULL AND ${journalEntries.date} <= ${asOf} THEN ${journalLines.creditCents} ELSE 0 END), 0)`,
       })
       .from(chartAccounts)
       .leftJoin(journalLines, eq(journalLines.accountCode, chartAccounts.code))
-      .leftJoin(
-        journalEntries,
-        and(
-          eq(journalLines.entryId, journalEntries.id),
-          lte(journalEntries.date, asOf),
-        ),
-      )
+      .leftJoin(journalEntries, eq(journalLines.entryId, journalEntries.id))
       .groupBy(chartAccounts.code, chartAccounts.name, chartAccounts.type, chartAccounts.normal)
       .orderBy(asc(chartAccounts.code))
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Card,
   CardBody,
@@ -14,6 +14,7 @@ import { fmtDateLong, todayISO } from '~/lib/date'
 
 export const Route = createFileRoute('/_app/reports/')({
   loader: () => getBalanceSheet({ data: { asOf: todayISO() } }),
+  staleTime: 0,
   component: BalanceSheetPage,
 })
 
@@ -22,6 +23,12 @@ function BalanceSheetPage() {
   const [data, setData] = useState(initial)
   const [asOf, setAsOf] = useState(initial.asOf)
   const [busy, setBusy] = useState(false)
+
+  // Router intent-preload can mount with cached loader data; keep in sync on refetch.
+  useEffect(() => {
+    setData(initial)
+    setAsOf(initial.asOf)
+  }, [initial])
 
   async function reload() {
     setBusy(true)

@@ -112,6 +112,19 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
         if (inv.customerId !== data.customerId)
           throw new Error('Invoice belongs to a different customer.')
         if (inv.status === 'void') throw new Error('Invoice is voided.')
+        const paidBefore = (
+          tx
+            .select({
+              t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
+            })
+            .from(cashReceipts)
+            .where(eq(cashReceipts.invoiceId, invoiceId!))
+            .all() as any[]
+        )[0]?.t as number
+        const balanceDue = inv.subtotalCents - Number(paidBefore ?? 0)
+        if (balanceDue <= 0) throw new Error('Invoice has no balance due.')
+        if (amountCents > balanceDue)
+          throw new Error('Payment exceeds invoice balance.')
       }
 
       tx.insert(cashReceipts)

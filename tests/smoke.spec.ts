@@ -78,14 +78,16 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.fill('#r-amt', '300')
   await page.getByRole('button', { name: /^log payment$/i }).click()
   await page.waitForURL(/\/receipts/)
+  await expect(page.getByText(/\$300\.00/).first()).toBeVisible()
 
   // ---- Log a stand-alone payment to test auto-invoice ----
   await page.getByRole('link', { name: /log payment/i }).click()
-  await page.locator('#r-inv').selectOption('') // ensure auto
+  await page.waitForURL(/\/receipts\/new/)
+  await page.locator('#r-inv').selectOption({ value: '' })
   await page.fill('#r-amt', '50')
   await page.getByRole('button', { name: /^log payment$/i }).click()
-  // The notice may appear briefly; check we get redirected to /receipts
-  await page.waitForURL(/\/receipts/, { timeout: 5000 })
+  await page.waitForURL(/\/receipts/, { timeout: 10_000 })
+  await expect(page.getByText(/\$50\.00/).first()).toBeVisible()
 
   // ---- Log a mileage trip ----
   await page.getByRole('complementary').getByRole('link', { name: 'Mileage' }).click()

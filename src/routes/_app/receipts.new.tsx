@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import {
@@ -36,6 +36,7 @@ function NewReceipt() {
   const { customers } = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
+  const router = useRouter()
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? '')
   const [invoiceId, setInvoiceId] = useState<string>(search.invoiceId ?? '')
   const [openInvoices, setOpenInvoices] = useState<Array<any>>([])
@@ -61,10 +62,7 @@ function NewReceipt() {
     }
     openInvoicesForCustomer({ data: { customerId } }).then((list) => {
       setOpenInvoices(list)
-      // if param-supplied invoiceId not in list, clear it
-      if (invoiceId && !list.some((i) => i.id === invoiceId)) {
-        // it may still belong to this customer but be paid; leave as-is for now
-      }
+      setInvoiceId((cur) => (cur && !list.some((i) => i.id === cur) ? '' : cur))
     })
   }, [customerId])
 
@@ -106,6 +104,7 @@ function NewReceipt() {
       if (pendingFile) {
         await uploadPendingAttachment(pendingFile, 'cash_receipt', result.id)
       }
+      await router.invalidate()
       if (result.autoInvoice) {
         setAutoInvoiceNotice(
           `Auto-created invoice ${result.autoInvoice.number} for this payment.`,
