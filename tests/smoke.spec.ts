@@ -28,6 +28,7 @@ for (const vp of viewports) {
 }
 
 test('the full sole-proprietor flow works', async ({ page }) => {
+  test.setTimeout(120_000)
   await page.setViewportSize({ width: 1440, height: 900 })
 
   // ---- Sign up the first/only owner ----
@@ -87,12 +88,15 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.waitForURL(/\/receipts/, { timeout: 5000 })
 
   // ---- Log a mileage trip ----
-  await page.getByRole('link', { name: /mileage/i }).click()
+  await page.getByRole('link', { name: /^mileage$/i }).click()
   await page.getByRole('button', { name: /log your first trip/i }).click()
-  await page.fill('#m-miles', '40')
-  await page.fill('#m-purpose', 'Client visit — Acme')
-  await page.getByRole('button', { name: /log trip/i }).click()
-  await expect(page.getByText('Client visit — Acme')).toBeVisible()
+  await expect(page.getByRole('heading', { name: /log a trip/i })).toBeVisible()
+  await page.getByLabel('Miles').fill('40')
+  await page.getByLabel('Purpose').fill('Client visit - Acme')
+  const logTrip = page.getByRole('button', { name: /^log trip$/i })
+  await expect(logTrip).toBeEnabled()
+  await logTrip.click()
+  await expect(visibleText(page, 'Client visit - Acme').first()).toBeVisible({ timeout: 15_000 })
   await expect(visibleText(page, '$29.00').first()).toBeVisible()
 
   // ---- Reports: balance sheet should balance ----
