@@ -107,31 +107,27 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await expect(visibleText(page, '$29.00').first()).toBeVisible()
 
   // ---- Reports: balance sheet should balance ----
-  await page.getByRole('link', { name: /reports/i }).click()
+  await page.getByRole('complementary').getByRole('link', { name: 'Reports' }).click()
+  await page.waitForURL(/\/reports/)
   await expect(page.getByText('Balance Sheet').first()).toBeVisible()
-  await expect(page.getByText(/in balance/i)).toBeVisible()
+  await expect(visibleText(page, /in balance/i).first()).toBeVisible()
   // Cash should be $350, AR $0, owners contribution from mileage $29 (40 mi × 72.5¢)
   await expect(visibleText(page, '$350.00').first()).toBeVisible()
-  await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/05-balance-sheet.png` })
 
   // ---- Cash flow ----
-  await page.getByRole('link', { name: /cash flow/i }).click()
+  await page.goto(`${BASE}/reports/cash-flow`)
   await expect(page.getByText(/closing cash/i)).toBeVisible()
   await expect(visibleText(page, '$350.00').first()).toBeVisible()
-  await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/06-cash-flow.png` })
 
   // ---- Capture remaining screenshots ----
   await page.goto(`${BASE}/dashboard`)
-  await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/02-dashboard.png` })
 
   await page.goto(`${BASE}/invoices`)
-  await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/03-invoices.png` })
 
   await page.goto(`${BASE}/mileage`)
-  await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/04-mileage.png` })
 })
