@@ -13,7 +13,7 @@ description: Documents Docker image build, Helm chart, release-please versioning
 | Entrypoint (migrate + start) | `docker/entrypoint.sh` |
 | Helm chart | `deploy/helm/simple-books/` |
 | CI | `.github/workflows/ci.yml` |
-| Image publish | `.github/workflows/docker.yml` → `ghcr.io/radicand/simple-books` |
+| Image publish | `.github/workflows/docker.yml` → `ghcr.io/radicand/simple-books` (release tags: `linux/amd64` + `linux/arm64`) |
 | Versioning | `release-please-config.json`, `.release-please-manifest.json` |
 | E2E harness | `scripts/e2e.sh` |
 

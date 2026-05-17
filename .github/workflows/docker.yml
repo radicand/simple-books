@@ -22,6 +22,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set image platforms
+        id: platforms
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "list=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT"
+          else
+            echo "list=linux/amd64" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up QEMU
+        if: contains(steps.platforms.outputs.list, 'arm64')
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -49,6 +62,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: ${{ steps.platforms.outputs.list }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
