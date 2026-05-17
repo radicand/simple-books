@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.3](https://github.com/radicand/simple-books/compare/v0.1.2...v0.1.3) (2026-05-17)
+
+
+### Features
+
+* dependabot ([a19a1d4](https://github.com/radicand/simple-books/commit/a19a1d4b17d07c1ec53aa03a24f18e33494abb5f))
+* favicon ([dbf097e](https://github.com/radicand/simple-books/commit/dbf097ecd043c6bc283ca9b36c60139ddc298956))
+* sec-review skill ([127b16f](https://github.com/radicand/simple-books/commit/127b16f889020cd2ad181af6bb59bfe889b848b2))
+
+
+### Bug Fixes
+
+* close flagged security gaps ([661541b](https://github.com/radicand/simple-books/commit/661541b726655b076b9ae9c85a82139ae6727168))
+* **docker:** drop build-only deps from runtime image for Trivy ([02a2c13](https://github.com/radicand/simple-books/commit/02a2c13a6d80ddbd295eff75ce73d42f6ae245e9))
+* link oidc accounts ([7af7d48](https://github.com/radicand/simple-books/commit/7af7d4852a5906f27202c759ccb19619804f713b))
+
 ## [0.1.2](https://github.com/radicand/simple-books/compare/v0.1.1...v0.1.2) (2026-05-17)
 
 
