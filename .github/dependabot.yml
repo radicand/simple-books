@@ -1,0 +1,91 @@
+# Dependabot version updates — https://docs.github.com/en/code-security/dependabot
+# Security updates are enabled separately in repo settings (not configured here).
+
+version: 2
+
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "14:00"
+      timezone: UTC
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: deps
+      prefix-development: deps-dev
+      include: scope
+    groups:
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      better-auth:
+        patterns:
+          - "better-auth"
+          - "@better-auth/*"
+      dev-tooling:
+        patterns:
+          - "@playwright/*"
+          - "@tailwindcss/*"
+          - "@types/*"
+          - "@vitejs/*"
+          - "drizzle-kit"
+          - "tailwindcss"
+          - "typescript"
+          - "tsx"
+          - "vite"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "14:00"
+      timezone: UTC
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+      docker-actions:
+        patterns:
+          - "docker/*"
+      googleapis:
+        patterns:
+          - "googleapis/*"
+      oven-sh:
+        patterns:
+          - "oven-sh/*"
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "14:00"
+      timezone: UTC
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
