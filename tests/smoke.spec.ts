@@ -5,6 +5,10 @@ const BASE = 'http://localhost:3000'
 const SHOTS = 'docs/screens'
 mkdirSync(SHOTS, { recursive: true })
 
+/** Responsive layouts duplicate amounts in hidden breakpoints; target visible nodes only. */
+const visibleText = (page: import('@playwright/test').Page, text: string | RegExp) =>
+  page.getByText(text).filter({ visible: true })
+
 // Single end-to-end happy path. Assumes the server is running with a fresh
 // DB (`bun run db:reset && bun run dev`).
 
@@ -65,7 +69,7 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.getByRole('button', { name: /create invoice/i }).click()
   await page.waitForURL(/\/invoices\/inv_/)
   await expect(page.getByText(/invoice 2026-/i)).toBeVisible()
-  await expect(page.getByText('$300.00').first()).toBeVisible()
+  await expect(visibleText(page, '$300.00').first()).toBeVisible()
 
   // ---- Log a payment for that invoice ----
   await page.getByRole('link', { name: /log payment/i }).click()
@@ -89,21 +93,21 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.fill('#m-purpose', 'Client visit — Acme')
   await page.getByRole('button', { name: /log trip/i }).click()
   await expect(page.getByText('Client visit — Acme')).toBeVisible()
-  await expect(page.getByText('$29.00').first()).toBeVisible()
+  await expect(visibleText(page, '$29.00').first()).toBeVisible()
 
   // ---- Reports: balance sheet should balance ----
   await page.getByRole('link', { name: /reports/i }).click()
   await expect(page.getByText('Balance Sheet').first()).toBeVisible()
   await expect(page.getByText(/in balance/i)).toBeVisible()
   // Cash should be $350, AR $0, owners contribution from mileage $29 (40 mi × 72.5¢)
-  await expect(page.getByText('$350.00').first()).toBeVisible()
+  await expect(visibleText(page, '$350.00').first()).toBeVisible()
   await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/05-balance-sheet.png` })
 
   // ---- Cash flow ----
   await page.getByRole('link', { name: /cash flow/i }).click()
   await expect(page.getByText(/closing cash/i)).toBeVisible()
-  await expect(page.getByText('$350.00').first()).toBeVisible()
+  await expect(visibleText(page, '$350.00').first()).toBeVisible()
   await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/06-cash-flow.png` })
 
