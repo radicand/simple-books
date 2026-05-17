@@ -24,6 +24,7 @@ Agent Skills in [`.agents/skills/`](.agents/skills/) (`skill-name/SKILL.md`):
 - `multi-user-auth` — OIDC-only after bootstrap
 - `deployment` — Docker, Helm, release-please
 - `playing-with-playwright` — smoke test runbook
+- `adversarial-security-review` — hostile/LLM-aware security review before merge
 
 ## Key paths
 
