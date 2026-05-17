@@ -11,7 +11,7 @@ jobs:
   package-chart:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Package chart
         run: |
@@ -21,6 +21,6 @@ jobs:
           helm package deploy/helm/simple-books -d dist
 
       - name: Upload chart to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*.tgz
