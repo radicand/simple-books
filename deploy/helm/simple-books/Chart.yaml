@@ -2,8 +2,8 @@ apiVersion: v2
 name: simple-books
 description: Sole-proprietor bookkeeping (TanStack Start + Bun + SQLite)
 type: application
-version: 0.1.1
-appVersion: "0.1.1"
+version: 0.1.2
+appVersion: 0.1.2
 kubeVersion: '>=1.25.0-0'
 keywords:
   - bookkeeping

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.2](https://github.com/radicand/simple-books/compare/v0.1.1...v0.1.2) (2026-05-17)
+
+
+### Features
+
+* **docker:** publish release images for amd64 and arm64 ([6da83f4](https://github.com/radicand/simple-books/commit/6da83f479308bc38a223817d11ce2ebd3abcfb2d))
+
+
+### Bug Fixes
+
+* **ci:** do not fail Docker workflow on Trivy base-image CVEs ([490f4d3](https://github.com/radicand/simple-books/commit/490f4d348b45e6cbb8310b8b683bb876bcbfd76b))
+* **release:** bump Chart appVersion via release-please ([36c5f2d](https://github.com/radicand/simple-books/commit/36c5f2de48d1cbe66ae273a1eb4e289faaaac250))
+* rp ([178b332](https://github.com/radicand/simple-books/commit/178b332742c995b931e90be5614b86e7c8eb283c))
+* tests ([47a4c00](https://github.com/radicand/simple-books/commit/47a4c00b559da056fd31c779b0659cac63382f1d))
+* use token for rp ([d873fe8](https://github.com/radicand/simple-books/commit/d873fe82d0e6ae9c936f6f85a3c15b74b25d89d5))
+
 ## [0.1.1](https://github.com/radicand/simple-books/compare/v0.1.0...v0.1.1) (2026-05-17)
 
 
