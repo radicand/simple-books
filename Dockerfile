@@ -19,6 +19,12 @@ ENV NODE_ENV=production \
   DATABASE_URL=/app/data/simple-books.db
 COPY --from=build --chown=app:app /app/package.json /app/bun.lock ./
 RUN bun install --frozen-lockfile --production \
+  && rm -rf \
+    node_modules/drizzle-kit \
+    node_modules/esbuild \
+    node_modules/@esbuild \
+    node_modules/@esbuild-kit \
+    node_modules/tsx \
   && rm -rf /root/.bun/install/cache
 COPY --from=build --chown=app:app /app/.output ./.output
 COPY --from=build --chown=app:app /app/drizzle ./drizzle
