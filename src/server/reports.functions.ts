@@ -1,57 +1,48 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { and, asc, eq, gte, lte, sql, inArray, desc } from 'drizzle-orm'
-import { db } from '~/db/client.server'
-import {
-  cashReceipts,
-  customers,
-  chartAccounts,
-  journalEntries,
-  journalLines,
-} from '~/db/schema'
-import { ensureSession } from '~/lib/auth.functions'
-import { ACCT } from '~/server/posting.server'
+import { requireAuthMiddleware } from '~/lib/auth.functions'
+import { ACCT } from '~/server/posting'
 import { todayISO } from '~/lib/date'
 
-/** Sum of (debits - credits) for accounts as of (≤) a date. */
-async function ledgerBalances(asOf: string) {
-  const rows = await db
-    .select({
-      code: chartAccounts.code,
-      name: chartAccounts.name,
-      type: chartAccounts.type,
-      normal: chartAccounts.normal,
-      dr: sql<number>`COALESCE(SUM(${journalLines.debitCents}),0)`,
-      cr: sql<number>`COALESCE(SUM(${journalLines.creditCents}),0)`,
-    })
-    .from(chartAccounts)
-    .leftJoin(journalLines, eq(journalLines.accountCode, chartAccounts.code))
-    .leftJoin(
-      journalEntries,
-      and(
-        eq(journalLines.entryId, journalEntries.id),
-        lte(journalEntries.date, asOf),
-      ),
-    )
-    .groupBy(chartAccounts.code, chartAccounts.name, chartAccounts.type, chartAccounts.normal)
-    .orderBy(asc(chartAccounts.code))
-
-  return rows.map((r) => {
-    const dr = Number(r.dr)
-    const cr = Number(r.cr)
-    const balance = r.normal === 'debit' ? dr - cr : cr - dr
-    return { ...r, dr, cr, balance }
-  })
-}
-
-export const getBalanceSheet = createServerFn({ method: 'GET' })
+export const getBalanceSheet = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) =>
     z.object({ asOf: z.string().optional() }).parse(d),
   )
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { chartAccounts, journalEntries, journalLines } = await import('~/db/schema')
+    const { and, asc, eq, lte, sql } = await import('drizzle-orm')
+
     const asOf = data.asOf || todayISO()
-    const bal = await ledgerBalances(asOf)
+
+    const rows = await db
+      .select({
+        code: chartAccounts.code,
+        name: chartAccounts.name,
+        type: chartAccounts.type,
+        normal: chartAccounts.normal,
+        dr: sql<number>`COALESCE(SUM(${journalLines.debitCents}),0)`,
+        cr: sql<number>`COALESCE(SUM(${journalLines.creditCents}),0)`,
+      })
+      .from(chartAccounts)
+      .leftJoin(journalLines, eq(journalLines.accountCode, chartAccounts.code))
+      .leftJoin(
+        journalEntries,
+        and(
+          eq(journalLines.entryId, journalEntries.id),
+          lte(journalEntries.date, asOf),
+        ),
+      )
+      .groupBy(chartAccounts.code, chartAccounts.name, chartAccounts.type, chartAccounts.normal)
+      .orderBy(asc(chartAccounts.code))
+
+    const bal = rows.map((r) => {
+      const dr = Number(r.dr)
+      const cr = Number(r.cr)
+      const balance = r.normal === 'debit' ? dr - cr : cr - dr
+      return { ...r, dr, cr, balance }
+    })
 
     const assets = bal.filter((b) => b.type === 'asset')
     const liabilities = bal.filter((b) => b.type === 'liability')
@@ -84,14 +75,16 @@ export const getBalanceSheet = createServerFn({ method: 'GET' })
     }
   })
 
-export const getCashFlow = createServerFn({ method: 'GET' })
+export const getCashFlow = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) =>
     z.object({ from: z.string(), to: z.string() }).parse(d),
   )
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { cashReceipts, customers, journalEntries, journalLines } = await import('~/db/schema')
+    const { and, asc, eq, gte, lte, sql } = await import('drizzle-orm')
 
-    // Opening cash balance = cash balance as of (from - 1 day)
     const [openingRow] = await db
       .select({
         dr: sql<number>`COALESCE(SUM(${journalLines.debitCents}),0)`,
@@ -127,7 +120,6 @@ export const getCashFlow = createServerFn({ method: 'GET' })
       .orderBy(asc(cashReceipts.receivedOn))
 
     const totalIn = inflows.reduce((s, r) => s + r.amountCents, 0)
-    // MVP: no cash outflows tracked.
     const totalOut = 0
 
     return {

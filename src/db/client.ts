@@ -1,3 +1,4 @@
+import '@tanstack/react-start/server-only'
 import { Database } from 'bun:sqlite'
 import { drizzle } from 'drizzle-orm/bun-sqlite'
 import { mkdirSync } from 'node:fs'

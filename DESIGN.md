@@ -163,8 +163,12 @@ Both reports render as semantic HTML tables (printable). No charts in MVP.
 - **CSRF**: Better Auth's signed-cookie + origin check.
 - **Rate limiting**: Better Auth's defaults; `/sign-in/email` tightened to
   3 attempts / 10s.
-- **Authorization**: every business `createServerFn` calls `ensureSession()`
-  before any DB work. Server-only modules carry `*.server.ts` suffix.
+- **Authorization**: every business `createServerFn` attaches the
+  `requireAuthMiddleware` (defined in `src/lib/auth.functions.ts`), which
+  injects the session into `context` and throws 401 when missing. The DB
+  client and Better Auth instance are marked `server-only` (via the
+  `'@tanstack/react-start/server-only'` import), so they cannot leak into
+  the client bundle.
 - **Input validation**: Zod schemas at every server-function boundary.
 - **Money**: integer cents everywhere; never `parseFloat`.
 - **Audit**: `created_at` on every row; journal entries are append-only (no

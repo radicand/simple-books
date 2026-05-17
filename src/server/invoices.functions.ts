@@ -1,22 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm'
-import { db, sqlite } from '~/db/client.server'
-import {
-  invoices,
-  invoiceLines,
-  customers,
-  serviceProducts,
-  cashReceipts,
-} from '~/db/schema'
-import { ensureSession } from '~/lib/auth.functions'
+import { requireAuthMiddleware } from '~/lib/auth.functions'
 import { newId } from '~/lib/ids'
 import {
   parseDollarsToCents,
   parseQuantityToMicro,
 } from '~/lib/money'
 import { todayISO, isoYear } from '~/lib/date'
-import { postJournal, ACCT } from '~/server/posting.server'
+import { ACCT, postJournalSync, nextInvoiceNumber } from '~/server/posting'
 
 const lineInputSchema = z.object({
   serviceProductId: z.string().nullable().optional(),
@@ -33,20 +24,12 @@ const createSchema = z.object({
   lines: z.array(lineInputSchema).min(1),
 })
 
-/** Generate the next invoice number for the issued-year. e.g. 2026-0007. */
-export function nextInvoiceNumber(year: number): string {
-  const row = sqlite
-    .query<{ n: string | null }, [string]>(
-      `SELECT MAX(number) AS n FROM invoices WHERE number LIKE ?`,
-    )
-    .get(`${year}-%`)
-  const last = row?.n ? Number(row.n.split('-')[1]) : 0
-  const next = (last || 0) + 1
-  return `${year}-${String(next).padStart(4, '0')}`
-}
+export const listInvoices = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(async () => {
+  // auth enforced by requireAuthMiddleware
+  const { db } = await import('~/db/client')
+  const { invoices, customers, cashReceipts } = await import('~/db/schema')
+  const { eq, desc, sql } = await import('drizzle-orm')
 
-export const listInvoices = createServerFn({ method: 'GET' }).handler(async () => {
-  await ensureSession()
   const rows = await db
     .select({
       id: invoices.id,
@@ -63,7 +46,6 @@ export const listInvoices = createServerFn({ method: 'GET' }).handler(async () =
     .leftJoin(customers, eq(invoices.customerId, customers.id))
     .orderBy(desc(invoices.issuedOn), desc(invoices.number))
 
-  // Compute paid totals in one query.
   const paid = await db
     .select({
       invoiceId: cashReceipts.invoiceId,
@@ -80,10 +62,13 @@ export const listInvoices = createServerFn({ method: 'GET' }).handler(async () =
   }))
 })
 
-export const getInvoice = createServerFn({ method: 'GET' })
+export const getInvoice = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { invoices, invoiceLines, customers, cashReceipts } = await import('~/db/schema')
+    const { eq, asc, desc } = await import('drizzle-orm')
     const [inv] = await db
       .select({
         id: invoices.id,
@@ -121,15 +106,16 @@ export const getInvoice = createServerFn({ method: 'GET' })
     }
   })
 
-export const createInvoice = createServerFn({ method: 'POST' })
+export const createInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db, sqlite } = await import('~/db/client')
+    const { invoices, invoiceLines } = await import('~/db/schema')
+
     const linesParsed = data.lines.map((l, i) => {
       const qtyMicro = parseQuantityToMicro(l.quantity)
       const unitPriceCents = parseDollarsToCents(l.unitPrice)
-      // amount = qty (decimal) × unit price (cents) → cents
-      // qtyMicro × unitPriceCents / 1e6 with half-up rounding
       const product = BigInt(qtyMicro) * BigInt(unitPriceCents)
       const half = 500_000n
       const rounded =
@@ -151,7 +137,7 @@ export const createInvoice = createServerFn({ method: 'POST' })
     if (subtotal <= 0) throw new Error('Invoice total must be > 0.')
 
     const year = isoYear(data.issuedOn)
-    const number = nextInvoiceNumber(year)
+    const number = nextInvoiceNumber(sqlite, year)
     const id = newId('inv')
 
     db.transaction((tx) => {
@@ -170,7 +156,6 @@ export const createInvoice = createServerFn({ method: 'POST' })
       for (const l of linesParsed) {
         tx.insert(invoiceLines).values({ ...l, invoiceId: id }).run()
       }
-      // Post: DR A/R, CR Services Revenue
       postJournalSync(tx, {
         date: data.issuedOn,
         memo: `Invoice ${number}`,
@@ -185,10 +170,14 @@ export const createInvoice = createServerFn({ method: 'POST' })
     return { id, number }
   })
 
-export const voidInvoice = createServerFn({ method: 'POST' })
+export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { invoices, cashReceipts } = await import('~/db/schema')
+    const { eq, sql } = await import('drizzle-orm')
+
     const [inv] = await db.select().from(invoices).where(eq(invoices.id, data.id))
     if (!inv) throw new Error('Invoice not found.')
     if (inv.status === 'void') return { ok: true }
@@ -214,102 +203,3 @@ export const voidInvoice = createServerFn({ method: 'POST' })
     })
     return { ok: true }
   })
-
-// Sync wrapper because better-sqlite3-style tx is sync; drizzle bun-sqlite tx
-// callbacks are sync too. We need a sync version of postJournal.
-import { journalEntries, journalLines } from '~/db/schema'
-function postJournalSync(
-  tx: any,
-  args: {
-    date: string
-    memo: string
-    source: 'invoice' | 'cash_receipt' | 'mileage' | 'manual' | 'reversal'
-    sourceId?: string
-    lines: Array<{
-      accountCode: string
-      debitCents?: number
-      creditCents?: number
-      memo?: string
-    }>
-  },
-) {
-  const debits = args.lines.reduce((s, l) => s + (l.debitCents ?? 0), 0)
-  const credits = args.lines.reduce((s, l) => s + (l.creditCents ?? 0), 0)
-  if (debits !== credits) throw new Error(`Unbalanced: ${debits} vs ${credits}`)
-  if (debits === 0) throw new Error('Zero-amount journal entry.')
-  const entryId = newId('je')
-  tx.insert(journalEntries)
-    .values({
-      id: entryId,
-      date: args.date,
-      memo: args.memo,
-      source: args.source,
-      sourceId: args.sourceId ?? null,
-    })
-    .run()
-  for (let i = 0; i < args.lines.length; i++) {
-    const l = args.lines[i]!
-    tx.insert(journalLines)
-      .values({
-        id: newId('jl'),
-        entryId,
-        accountCode: l.accountCode,
-        debitCents: l.debitCents ?? 0,
-        creditCents: l.creditCents ?? 0,
-        memo: l.memo ?? null,
-        position: i,
-      })
-      .run()
-  }
-  return entryId
-}
-
-// Helper used by receipts.functions.ts to create an auto-invoice for a
-// stand-alone payment. Returns the new invoice id + number; runs inside the
-// caller's transaction (sync).
-export function autoCreateInvoiceForPayment(
-  tx: any,
-  args: { customerId: string; date: string; amountCents: number },
-): { id: string; number: string } {
-  const year = isoYear(args.date)
-  const number = nextInvoiceNumber(year)
-  const id = newId('inv')
-  tx.insert(invoices)
-    .values({
-      id,
-      number,
-      customerId: args.customerId,
-      issuedOn: args.date,
-      dueOn: args.date,
-      status: 'open',
-      memo: 'Auto-created from payment',
-      subtotalCents: args.amountCents,
-      autoCreated: true,
-    })
-    .run()
-  tx.insert(invoiceLines)
-    .values({
-      id: newId('iln'),
-      invoiceId: id,
-      serviceProductId: null,
-      description: 'Services rendered',
-      quantityMicro: 1_000_000,
-      unitPriceCents: args.amountCents,
-      amountCents: args.amountCents,
-      position: 0,
-    })
-    .run()
-  postJournalSync(tx, {
-    date: args.date,
-    memo: `Invoice ${number} (auto-created)`,
-    source: 'invoice',
-    sourceId: id,
-    lines: [
-      { accountCode: ACCT.AR, debitCents: args.amountCents },
-      { accountCode: ACCT.SERVICES_REVENUE, creditCents: args.amountCents },
-    ],
-  })
-  return { id, number }
-}
-
-export { postJournalSync }

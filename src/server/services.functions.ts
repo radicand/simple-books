@@ -1,9 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { desc, eq } from 'drizzle-orm'
-import { db } from '~/db/client.server'
-import { serviceProducts } from '~/db/schema'
-import { ensureSession } from '~/lib/auth.functions'
+import { requireAuthMiddleware } from '~/lib/auth.functions'
 import { parseDollarsToCents } from '~/lib/money'
 import { newId } from '~/lib/ids'
 
@@ -19,9 +16,12 @@ const updateSchema = createSchema.extend({
   active: z.boolean().optional(),
 })
 
-export const listServices = createServerFn({ method: 'GET' }).handler(
+export const listServices = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(
   async () => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { serviceProducts } = await import('~/db/schema')
+    const { desc } = await import('drizzle-orm')
     return db
       .select()
       .from(serviceProducts)
@@ -29,10 +29,12 @@ export const listServices = createServerFn({ method: 'GET' }).handler(
   },
 )
 
-export const createService = createServerFn({ method: 'POST' })
+export const createService = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { serviceProducts } = await import('~/db/schema')
     const id = newId('svc')
     await db.insert(serviceProducts).values({
       id,
@@ -45,10 +47,13 @@ export const createService = createServerFn({ method: 'POST' })
     return { id }
   })
 
-export const updateService = createServerFn({ method: 'POST' })
+export const updateService = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { serviceProducts } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
     await db
       .update(serviceProducts)
       .set({
@@ -62,12 +67,15 @@ export const updateService = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
-export const toggleService = createServerFn({ method: 'POST' })
+export const toggleService = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) =>
     z.object({ id: z.string(), active: z.boolean() }).parse(d),
   )
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { serviceProducts } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
     await db
       .update(serviceProducts)
       .set({ active: data.active })

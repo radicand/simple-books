@@ -121,3 +121,5 @@ dist
 .tern-port
 node_modules/
 src/routeTree.gen.ts
+test-results/
+playwright-report/

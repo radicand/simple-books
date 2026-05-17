@@ -1,22 +1,37 @@
-import { createServerFn } from '@tanstack/react-start'
+import { createServerFn, createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { auth, oidcEnabled, oidcDisplayName } from '~/lib/auth.server'
+import { auth, oidcEnabled, oidcDisplayName } from '~/lib/auth'
 
-export const getSession = createServerFn({ method: 'GET' }).handler(async () => {
-  const req = getRequest()
-  const session = await auth.api.getSession({ headers: req.headers })
-  return session
-    ? { user: session.user, sessionId: session.session.id }
-    : null
-})
+/**
+ * Server middleware: load the current session (may be null) and inject it
+ * into the handler's context.
+ */
+export const sessionMiddleware = createMiddleware({ type: 'function' }).server(
+  async ({ next }) => {
+    const session = await auth.api.getSession({ headers: getRequest().headers })
+    return next({ context: { session } })
+  },
+)
 
-export const getAuthConfig = createServerFn({ method: 'GET' }).handler(async () => {
-  return { oidcEnabled, oidcDisplayName }
-})
+/**
+ * Server middleware: require an authenticated session. Throws 401 otherwise.
+ * The session is injected into the handler's context.
+ */
+export const requireAuthMiddleware = createMiddleware({ type: 'function' })
+  .middleware([sessionMiddleware])
+  .server(async ({ context, next }) => {
+    if (!context.session) throw new Response('Unauthorized', { status: 401 })
+    return next({ context: { session: context.session } })
+  })
 
-export async function ensureSession() {
-  const req = getRequest()
-  const session = await auth.api.getSession({ headers: req.headers })
-  if (!session) throw new Response('Unauthorized', { status: 401 })
-  return session
-}
+export const getSession = createServerFn({ method: 'GET' })
+  .middleware([sessionMiddleware])
+  .handler(async ({ context }) => {
+    return context.session
+      ? { user: context.session.user, sessionId: context.session.session.id }
+      : null
+  })
+
+export const getAuthConfig = createServerFn({ method: 'GET' }).handler(
+  async () => ({ oidcEnabled, oidcDisplayName }),
+)

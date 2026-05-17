@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { sql } from 'drizzle-orm'
-import { db } from '~/db/client.server'
+import { db } from '~/db/client'
 
 export const Route = createFileRoute('/api/auth/first-user-check')({
   server: {

@@ -1,9 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
-import { db } from '~/db/client.server'
-import { customers } from '~/db/schema'
-import { ensureSession } from '~/lib/auth.functions'
+import { requireAuthMiddleware } from '~/lib/auth.functions'
 import { newId } from '~/lib/ids'
 
 const upsertSchema = z.object({
@@ -13,26 +10,33 @@ const upsertSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
 })
 
-export const listCustomers = createServerFn({ method: 'GET' }).handler(
+export const listCustomers = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(
   async () => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { customers } = await import('~/db/schema')
     return db.select().from(customers).orderBy(customers.name)
   },
 )
 
-export const getCustomer = createServerFn({ method: 'GET' })
+export const getCustomer = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { customers } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
     const [row] = await db.select().from(customers).where(eq(customers.id, data.id))
     if (!row) throw new Error('Customer not found.')
     return row
   })
 
-export const createCustomer = createServerFn({ method: 'POST' })
+export const createCustomer = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => upsertSchema.parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { customers } = await import('~/db/schema')
     const id = data.id ?? newId('cus')
     await db.insert(customers).values({
       id,
@@ -43,10 +47,13 @@ export const createCustomer = createServerFn({ method: 'POST' })
     return { id }
   })
 
-export const updateCustomer = createServerFn({ method: 'POST' })
+export const updateCustomer = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => upsertSchema.required({ id: true }).parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { customers } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
     await db
       .update(customers)
       .set({

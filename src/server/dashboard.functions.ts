@@ -1,20 +1,21 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, desc, eq, gte, sql, inArray } from 'drizzle-orm'
-import { db } from '~/db/client.server'
-import {
-  cashReceipts,
-  customers,
-  invoices,
-  journalLines,
-  journalEntries,
-  chartAccounts,
-} from '~/db/schema'
-import { ensureSession } from '~/lib/auth.functions'
-import { ACCT } from '~/server/posting.server'
+import { requireAuthMiddleware } from '~/lib/auth.functions'
+import { ACCT } from '~/server/posting'
 import { todayISO } from '~/lib/date'
 
-export const getDashboard = createServerFn({ method: 'GET' }).handler(async () => {
-  await ensureSession()
+export const getDashboard = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(async () => {
+  // auth enforced by requireAuthMiddleware
+  const { db } = await import('~/db/client')
+  const {
+    cashReceipts,
+    customers,
+    invoices,
+    journalLines,
+    journalEntries,
+    chartAccounts,
+  } = await import('~/db/schema')
+  const { and, desc, eq, gte, sql, inArray } = await import('drizzle-orm')
+
   const today = todayISO()
   const yearStart = `${today.slice(0, 4)}-01-01`
 

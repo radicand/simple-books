@@ -1,20 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { desc, eq, sql } from 'drizzle-orm'
-import { db } from '~/db/client.server'
-import {
-  cashReceipts,
-  customers,
-  invoices,
-} from '~/db/schema'
-import { ensureSession } from '~/lib/auth.functions'
+import { requireAuthMiddleware } from '~/lib/auth.functions'
 import { newId } from '~/lib/ids'
 import { parseDollarsToCents } from '~/lib/money'
+import { isoYear } from '~/lib/date'
 import {
   postJournalSync,
   autoCreateInvoiceForPayment,
-} from '~/server/invoices.functions'
-import { ACCT } from '~/server/posting.server'
+  nextInvoiceNumber,
+  ACCT,
+} from '~/server/posting'
 
 const createSchema = z.object({
   customerId: z.string(),
@@ -25,8 +20,11 @@ const createSchema = z.object({
   memo: z.string().max(500).optional().nullable(),
 })
 
-export const listReceipts = createServerFn({ method: 'GET' }).handler(async () => {
-  await ensureSession()
+export const listReceipts = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(async () => {
+  // auth enforced by requireAuthMiddleware
+  const { db } = await import('~/db/client')
+  const { cashReceipts, customers, invoices } = await import('~/db/schema')
+  const { eq, desc } = await import('drizzle-orm')
   return db
     .select({
       id: cashReceipts.id,
@@ -45,12 +43,15 @@ export const listReceipts = createServerFn({ method: 'GET' }).handler(async () =
     .orderBy(desc(cashReceipts.receivedOn), desc(cashReceipts.createdAt))
 })
 
-export const openInvoicesForCustomer = createServerFn({ method: 'GET' })
+export const openInvoicesForCustomer = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) =>
     z.object({ customerId: z.string() }).parse(d),
   )
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { cashReceipts, invoices } = await import('~/db/schema')
+    const { eq, sql, desc } = await import('drizzle-orm')
     const rows = await db
       .select({
         id: invoices.id,
@@ -73,15 +74,22 @@ export const openInvoicesForCustomer = createServerFn({ method: 'GET' })
       .filter((r) => r.balanceCents > 0)
   })
 
-export const createReceipt = createServerFn({ method: 'POST' })
+export const createReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db, sqlite } = await import('~/db/client')
+    const { cashReceipts, invoices } = await import('~/db/schema')
+    const { eq, sql } = await import('drizzle-orm')
+
     const amountCents = parseDollarsToCents(data.amount)
     if (amountCents <= 0) throw new Error('Amount must be > 0.')
 
     let createdInvoice: { id: string; number: string } | null = null
     const receiptId = newId('rcp')
+
+    // Compute next invoice number outside tx (if needed)
+    const number = nextInvoiceNumber(sqlite, isoYear(data.receivedOn))
 
     db.transaction((tx) => {
       let invoiceId = data.invoiceId || null
@@ -90,11 +98,11 @@ export const createReceipt = createServerFn({ method: 'POST' })
           customerId: data.customerId,
           date: data.receivedOn,
           amountCents,
+          nextNumber: number,
         })
         invoiceId = made.id
         createdInvoice = made
       } else {
-        // verify ownership/customer match
         const [inv] = tx
           .select()
           .from(invoices)
@@ -120,7 +128,7 @@ export const createReceipt = createServerFn({ method: 'POST' })
 
       postJournalSync(tx, {
         date: data.receivedOn,
-        memo: `Payment received${createdInvoice ? ` (auto inv ${createdInvoice.number})` : ''}`,
+        memo: `Payment received${createdInvoice ? ` (auto inv ${(createdInvoice as { number: string }).number})` : ''}`,
         source: 'cash_receipt',
         sourceId: receiptId,
         lines: [
@@ -129,7 +137,6 @@ export const createReceipt = createServerFn({ method: 'POST' })
         ],
       })
 
-      // Mark invoice paid if fully settled
       const totalPaid = (
         tx
           .select({
@@ -155,10 +162,14 @@ export const createReceipt = createServerFn({ method: 'POST' })
     return { id: receiptId, autoInvoice: createdInvoice }
   })
 
-export const deleteReceipt = createServerFn({ method: 'POST' })
+export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
-    await ensureSession()
+    // auth enforced by requireAuthMiddleware
+    const { db } = await import('~/db/client')
+    const { cashReceipts, invoices } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
+
     const [r] = await db
       .select()
       .from(cashReceipts)
@@ -166,7 +177,6 @@ export const deleteReceipt = createServerFn({ method: 'POST' })
     if (!r) throw new Error('Receipt not found.')
 
     db.transaction((tx) => {
-      // Reverse journal entry (find by source_id)
       postJournalSync(tx, {
         date: r.receivedOn,
         memo: `Reverse payment ${r.id}`,
@@ -178,7 +188,6 @@ export const deleteReceipt = createServerFn({ method: 'POST' })
         ],
       })
       tx.delete(cashReceipts).where(eq(cashReceipts.id, data.id)).run()
-      // Reset invoice to open if it had been marked paid
       tx.update(invoices)
         .set({ status: 'open' })
         .where(eq(invoices.id, r.invoiceId))

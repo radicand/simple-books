@@ -1,7 +1,8 @@
+import '@tanstack/react-start/server-only'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { genericOAuth } from 'better-auth/plugins'
-import { db } from '~/db/client.server'
+import { db } from '~/db/client'
 import * as authSchema from '~/db/auth-schema'
 
 const oidcConfigured =
