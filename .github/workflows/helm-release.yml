@@ -1,0 +1,26 @@
+name: Helm release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package chart
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version:.*/version: ${VERSION}/" deploy/helm/simple-books/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${VERSION}\"/" deploy/helm/simple-books/Chart.yaml
+          helm package deploy/helm/simple-books -d dist
+
+      - name: Upload chart to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tgz

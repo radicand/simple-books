@@ -1,0 +1,15 @@
+apiVersion: v2
+name: simple-books
+description: Sole-proprietor bookkeeping (TanStack Start + Bun + SQLite)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - bookkeeping
+  - sqlite
+home: https://github.com/radicand/simple-books
+sources:
+  - https://github.com/radicand/simple-books
+maintainers:
+  - name: radicand

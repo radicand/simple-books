@@ -8,6 +8,14 @@ lerna-debug.log*
 
 # database
 *.sqlite
+data/
+.env
+.output/
+.cache/
+.tanstack/
+.vite/
+*.tsbuildinfo
+.DS_Store
 
 # package-json
 package-json.lock
@@ -111,3 +119,7 @@ dist
 
 # TernJS port file
 .tern-port
+node_modules/
+src/routeTree.gen.ts
+test-results/
+playwright-report/
