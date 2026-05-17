@@ -33,11 +33,11 @@ double-entry books while staying friendly enough for non-accountants.
 
 - No customer portals, email notifications, payment processing, or PDF export
   in MVP (invoice *records* only).
-- No multi-user, multi-org, role-based access (single-tenant per install).
+- No multi-org or role-based access (single shared books per install).
 - No charts/graphs. Tables and totals tell the story for MVP.
 - No payroll, sales tax engine, multi-currency, foreign exchange, inventory,
   bank-feed integrations.
-- No mobile-first redesign; we ship a responsive desktop-first web app.
+- No native mobile apps (responsive web is mobile-primary).
 
 ## 4. Architecture
 
@@ -119,9 +119,18 @@ recorded, mileage logged) writes one `journal_entries` row plus ≥2
 `journal_lines`. The sum of debits equals the sum of credits — enforced in
 code, asserted in every posting helper.
 
+### `mileage_rates`
+Per calendar-year IRS standard business rate. `rate_micro_per_mile` stores
+cents-per-mile × 10_000 (supports half-cent rates, e.g. 72.5¢ → 725000).
+Each `mileage_entries` row snapshots the rate used at entry time.
+
+### `attachments`
+Supporting documents (images, PDFs) linked to invoices, cash receipts, or
+mileage entries. Stored locally under `./data/uploads/` or in S3-compatible
+object storage when `S3_ENDPOINT` is configured.
+
 ### `settings`
-Key-value table. Notable keys: `mileage_rate_cents_per_mile` (default 70),
-`fiscal_year_start_month` (default 1).
+Key-value table. Notable keys: `fiscal_year_start_month` (default 1).
 
 ## 6. Posting Rules
 
@@ -163,6 +172,9 @@ Both reports render as semantic HTML tables (printable). No charts in MVP.
 - **CSRF**: Better Auth's signed-cookie + origin check.
 - **Rate limiting**: Better Auth's defaults; `/sign-in/email` tightened to
   3 attempts / 10s.
+- **Multi-user**: first account via email sign-up; additional users via OIDC
+  only (public sign-up disabled server-side unless `ALLOW_PUBLIC_SIGNUP=true`).
+  All users share one set of books (no row-level permissions).
 - **Authorization**: every business `createServerFn` attaches the
   `requireAuthMiddleware` (defined in `src/lib/auth.functions.ts`), which
   injects the session into `context` and throws 401 when missing. The DB
@@ -171,6 +183,9 @@ Both reports render as semantic HTML tables (printable). No charts in MVP.
   the client bundle.
 - **Input validation**: Zod schemas at every server-function boundary.
 - **Money**: integer cents everywhere; never `parseFloat`.
+- **Attachments**: images/PDFs on invoices, receipts, mileage; local dir or
+  S3-compatible storage. When S3 is used, configure bucket retention for IRS
+  audit periods (callout on Settings).
 - **Audit**: `created_at` on every row; journal entries are append-only (no
   edits, only reversals).
 - **Headers**: Nitro sets `X-Content-Type-Options`, `X-Frame-Options`,
@@ -249,15 +264,16 @@ Implemented from scratch (no external UI library) in `src/components/ui/`:
 - `Badge` (status pills)
 - `Dialog` (native `<dialog>`)
 
-### Layout
+### Layout (mobile-primary)
 
-Sidebar (240px) with brand + section nav, main column with top bar (page
-title, action slot, user menu). Pages have a hero header (title + brief help
-text + primary action) and content blocks.
+Three breakpoints: **compact** (&lt;640px) bottom tab bar + “More” sheet;
+**comfortable** (640–1023px) icon rail; **spacious** (≥1024px) full 240px
+sidebar. Page gutters: `px-4` / `px-6` / `px-8`. Touch targets ≥44px on
+compact.
 
 ## 10. Open questions
 
-- Multi-user / team support — deferred to post-MVP.
+- Per-user data isolation and roles — deferred.
 - Real PDF invoice export — deferred (record exists, presentation later).
 - Connecting a bank feed for true cash-flow reconciliation — deferred.
 - Tax filing exports (Schedule C summary) — deferred but the data model

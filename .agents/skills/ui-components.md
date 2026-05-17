@@ -7,7 +7,11 @@ keep dependencies trim and visual consistency tight.
 
 | Need                                     | Use                                |
 | ---------------------------------------- | ---------------------------------- |
-| Page title + subtitle + actions          | `<PageHeader>`                     |
+| Page title + subtitle + actions          | `<PageHeader>` (stacks on compact) |
+| Mobile list instead of wide table        | Card rows with `md:hidden` / `hidden md:block` |
+| Side-by-side fields on compact           | `<FormGrid>` from `~/components/form-grid` |
+| Form submit row on compact               | `<FormActions>` from `~/components/form-actions` |
+| Invoice line editor                      | `<InvoiceLineEditor>` from `~/components/invoice-line-editor` |
 | Bordered container with header           | `<Card>` + `<CardHeader>` + `<CardBody>` |
 | Form input                               | `<Input>`, wrapped in `<Field>`    |
 | Multi-line text                          | `<Textarea>` inside `<Field>`      |

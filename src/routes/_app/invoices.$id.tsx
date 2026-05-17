@@ -89,6 +89,36 @@ function InvoiceDetail() {
               </div>
             </div>
             <CardBody className="!p-0">
+              <div className="md:hidden divide-y divide-[var(--color-border)]">
+                {inv.lines.map((l) => (
+                  <div key={l.id} className="px-4 py-4 space-y-1">
+                    <div className="font-medium">{l.description}</div>
+                    <div className="flex items-center justify-between text-[13px] text-[var(--color-ink-soft)]">
+                      <span className="tabular">
+                        {microToDecimal(l.quantityMicro, 2)} × <Money cents={l.unitPriceCents} />
+                      </span>
+                      <Money cents={l.amountCents} className="font-semibold text-[var(--color-ink)]" />
+                    </div>
+                  </div>
+                ))}
+                <div className="px-4 py-3 space-y-2 bg-[var(--color-surface-2)]/50 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-ink-soft)]">Subtotal</span>
+                    <Money cents={inv.subtotalCents} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--color-ink-soft)]">Paid</span>
+                    <span className="text-[var(--color-positive)] tabular">
+                      −<Money cents={inv.paidCents} />
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-semibold pt-1 border-t border-[var(--color-border)]">
+                    <span>Balance</span>
+                    <Money cents={inv.balanceCents} tone={inv.balanceCents > 0 ? 'negative' : 'muted'} />
+                  </div>
+                </div>
+              </div>
+              <div className="hidden md:block">
               <Table>
                 <THead>
                   <tr>
@@ -141,6 +171,7 @@ function InvoiceDetail() {
                   </tr>
                 </tfoot>
               </Table>
+              </div>
             </CardBody>
           </Card>
 

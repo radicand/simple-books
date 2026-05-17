@@ -312,16 +312,20 @@ export function PageHeader({
   actions?: ReactNode
 }) {
   return (
-    <header className="flex items-end justify-between gap-4 mb-6">
+    <header className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--color-ink)]">
+        <h1 className="text-[20px] sm:text-[22px] font-semibold tracking-tight text-[var(--color-ink)]">
           {title}
         </h1>
         {subtitle && (
           <p className="text-sm text-[var(--color-ink-soft)] mt-1 max-w-2xl">{subtitle}</p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto [&_button]:min-h-11">
+          {actions}
+        </div>
+      )}
     </header>
   )
 }

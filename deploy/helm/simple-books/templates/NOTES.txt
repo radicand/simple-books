@@ -1,0 +1,19 @@
+simple-books {{ .Chart.AppVersion }} deployed.
+
+  Release: {{ .Release.Name }}
+  Namespace: {{ .Release.Namespace }}
+  Image: {{ include "simple-books.image" . }}
+
+Get the app URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else }}
+  kubectl port-forward svc/{{ include "simple-books.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  Then open http://127.0.0.1:8080
+{{- end }}
+
+Health check: GET /api/health
+
+Before first login, set BETTER_AUTH_SECRET and BETTER_AUTH_URL (via values.secretEnv or existingSecretName).

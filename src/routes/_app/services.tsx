@@ -25,6 +25,7 @@ import {
   toggleService,
 } from '~/server/services.functions'
 import type { ServiceProduct } from '~/db/schema'
+import { FormGrid } from '~/components/form-grid'
 
 export const Route = createFileRoute('/_app/services')({
   loader: () => listServices(),
@@ -191,7 +192,7 @@ function ServiceDialog({
             required
           />
         </Field>
-        <div className="grid grid-cols-2 gap-4">
+        <FormGrid>
           <Field label="Unit" htmlFor="svc-unit" required hint="e.g. hour, session, project">
             <Input
               id="svc-unit"
@@ -210,7 +211,7 @@ function ServiceDialog({
               required
             />
           </Field>
-        </div>
+        </FormGrid>
         <Field label="Description" htmlFor="svc-desc" hint="Optional. Shown by default on invoice lines.">
           <Textarea
             id="svc-desc"
@@ -247,22 +248,25 @@ export function ModalDialog({
   size?: 'md' | 'lg'
 }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center p-4 sm:p-8 bg-[oklch(0.22_0.012_270/0.4)] backdrop-blur-[2px]" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-40 flex items-end sm:items-start justify-center p-0 sm:p-4 sm:p-8 bg-[oklch(0.22_0.012_270/0.4)] backdrop-blur-[2px]"
+      onClick={onClose}
+    >
       <div
-        className={`mt-12 w-full ${size === 'lg' ? 'max-w-[820px]' : 'max-w-[480px]'} bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[14px] shadow-[var(--shadow-pop)]`}
+        className={`w-full sm:mt-12 max-h-[min(92dvh,100%)] sm:max-h-none flex flex-col overflow-hidden ${size === 'lg' ? 'sm:max-w-[820px]' : 'sm:max-w-[480px]'} bg-[var(--color-surface)] border border-[var(--color-border)] rounded-t-[20px] sm:rounded-[14px] shadow-[var(--shadow-pop)]`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between">
+        <div className="px-4 sm:px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between shrink-0">
           <h3 className="text-[15px] font-semibold tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+            className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] p-2 min-h-11 min-w-11 flex items-center justify-center rounded-[8px]"
             aria-label="Close"
           >
             <Icon d="M18 6L6 18M6 6l12 12" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   )

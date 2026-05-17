@@ -1,0 +1,119 @@
+# Default values for simple-books.
+# See values.schema.json for field documentation and validation.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/radicand/simple-books
+  tag: "" # defaults to Chart.appVersion when empty
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: simple-books.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+persistence:
+  enabled: true
+  existingClaim: "" # use an existing PVC instead of creating one
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  mountPath: /app/data
+  annotations: {}
+
+# Non-secret environment variables (see secretEnv for sensitive values).
+env:
+  NODE_ENV: production
+  PORT: "3000"
+  DATABASE_URL: /app/data/simple-books.db
+  UPLOAD_MAX_BYTES: "10485760"
+
+# Keys map to env var names; values are chart-managed Secret data (use externalSecret in prod).
+secretEnv:
+  BETTER_AUTH_SECRET: ""
+  BETTER_AUTH_URL: ""
+  OIDC_ISSUER_URL: ""
+  OIDC_CLIENT_ID: ""
+  OIDC_CLIENT_SECRET: ""
+  OIDC_REDIRECT_URI: ""
+  OIDC_DISPLAY_NAME: Single Sign-On
+  ALLOW_PUBLIC_SIGNUP: ""
+  S3_ENDPOINT: ""
+  S3_REGION: garage
+  S3_BUCKET: simple-books
+  S3_ACCESS_KEY: ""
+  S3_SECRET_KEY: ""
+
+# When set, env and secretEnv are not rendered; use with External Secrets Operator.
+existingSecretName: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -11,9 +11,12 @@
     "db:migrate": "bun run scripts/migrate.ts",
     "db:seed": "bun run scripts/seed.ts",
     "db:reset": "rm -rf data/simple-books.db data/simple-books.db-shm data/simple-books.db-wal && bun run db:migrate && bun run db:seed",
-    "auth:secret": "bun -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
+    "auth:secret": "bun -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
+    "test": "playwright test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1048.0",
+    "@aws-sdk/s3-request-presigner": "^3.1048.0",
     "@better-auth/drizzle-adapter": "^1.6.11",
     "@tanstack/react-query": "^5.100.10",
     "@tanstack/react-router": "^1.170.3",
@@ -37,7 +40,6 @@
     "tailwindcss": "^4.3.0",
     "tsx": "^4.22.1",
     "typescript": "^6.0.3",
-    "vite": "^8.0.13",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite": "^8.0.13"
   }
 }

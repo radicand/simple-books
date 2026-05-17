@@ -188,6 +188,8 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
     if (Number(receiptCount[0]?.c ?? 0) > 0) {
       throw new Error('Cannot void an invoice with payments. Delete the payments first.')
     }
+    const { deleteAttachmentsForSource } = await import('~/server/attachments.functions')
+    await deleteAttachmentsForSource('invoice', data.id)
     db.transaction((tx) => {
       tx.update(invoices).set({ status: 'void' }).where(eq(invoices.id, data.id)).run()
       postJournalSync(tx, {

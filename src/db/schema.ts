@@ -128,6 +128,15 @@ export const cashReceipts = sqliteTable(
   }),
 )
 
+// ---- Mileage rates (per calendar year) ----
+export const mileageRates = sqliteTable('mileage_rates', {
+  taxYear: integer('tax_year').primaryKey(),
+  rateMicroPerMile: integer('rate_micro_per_mile').notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+})
+
 // ---- Mileage Entries ----
 export const mileageEntries = sqliteTable(
   'mileage_entries',
@@ -142,6 +151,26 @@ export const mileageEntries = sqliteTable(
   },
   (t) => ({
     dateIdx: index('mileage_entries_date_idx').on(t.tripDate),
+  }),
+)
+
+// ---- Attachments (receipts, invoices, mileage supporting docs) ----
+export const attachments = sqliteTable(
+  'attachments',
+  {
+    id: text('id').primaryKey(),
+    sourceType: text('source_type', {
+      enum: ['invoice', 'cash_receipt', 'mileage'],
+    }).notNull(),
+    sourceId: text('source_id').notNull(),
+    storageKey: text('storage_key').notNull(),
+    fileName: text('file_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    createdAt: ts(),
+  },
+  (t) => ({
+    sourceIdx: index('attachments_source_idx').on(t.sourceType, t.sourceId),
   }),
 )
 

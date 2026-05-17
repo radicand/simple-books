@@ -20,4 +20,9 @@ Keep skills under ~80 lines each. Link out for depth.
 - `accounting-posting.md` — how to post a new business event to the ledger.
 - `adding-a-server-fn.md` — minimal recipe for a new `createServerFn` endpoint.
 - `ui-components.md` — when to reach for which primitive in `components/ui`.
+- `responsive-layout.md` — mobile-primary breakpoints and app shell.
+- `settings-and-mileage-rates.md` — per-year IRS mileage rates.
+- `document-storage.md` — local/S3 attachments for posted records.
+- `multi-user-auth.md` — bootstrap vs OIDC-only additional users.
 - `playing-with-playwright.md` — how to drive the app for smoke testing.
+- `deployment.md` — Docker image, Helm chart, release-please, GH Actions.

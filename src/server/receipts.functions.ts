@@ -176,6 +176,9 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
       .where(eq(cashReceipts.id, data.id))
     if (!r) throw new Error('Receipt not found.')
 
+    const { deleteAttachmentsForSource } = await import('~/server/attachments.functions')
+    await deleteAttachmentsForSource('cash_receipt', data.id)
+
     db.transaction((tx) => {
       postJournalSync(tx, {
         date: r.receivedOn,

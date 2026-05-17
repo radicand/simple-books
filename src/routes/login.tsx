@@ -4,7 +4,7 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { authClient } from '~/lib/auth-client'
 import { getSession, getAuthConfig } from '~/lib/auth.functions'
 import { Button, Card, CardBody, Field, Input } from '~/components/ui'
@@ -22,31 +22,20 @@ function LoginPage() {
   const cfg = Route.useLoaderData()
   const router = useRouter()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [needsFirstUser, setNeedsFirstUser] = useState(false)
 
-  useEffect(() => {
-    fetch('/api/auth/first-user-check')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setNeedsFirstUser(!!d.needsFirstUser))
-      .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (needsFirstUser) setMode('sign-up')
-  }, [needsFirstUser])
+  const needsFirstUser = cfg.needsFirstUser
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setBusy(true)
     try {
-      if (mode === 'sign-up') {
+      if (needsFirstUser) {
         const res = await authClient.signUp.email({
           email,
           password,
@@ -62,8 +51,8 @@ function LoginPage() {
       }
       await router.invalidate()
       navigate({ to: '/dashboard' })
-    } catch (err: any) {
-      setError(err?.message ?? String(err))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -78,14 +67,14 @@ function LoginPage() {
         callbackURL: '/dashboard',
         errorCallbackURL: '/login',
       })
-    } catch (err: any) {
-      setError(err?.message ?? String(err))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
       setBusy(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-[var(--color-bg)]">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4 sm:px-6 py-12 bg-[var(--color-bg)]">
       <div className="w-full max-w-[400px]">
         <div className="flex items-center gap-2 justify-center mb-8">
           <Logo />
@@ -95,18 +84,14 @@ function LoginPage() {
         <Card>
           <CardBody className="!p-7">
             <h1 className="text-[20px] font-semibold tracking-tight mb-1">
-              {needsFirstUser
-                ? 'Create your owner account'
-                : mode === 'sign-in'
-                  ? 'Welcome back'
-                  : 'Create an account'}
+              {needsFirstUser ? 'Create your owner account' : 'Welcome back'}
             </h1>
             <p className="text-sm text-[var(--color-ink-soft)] mb-6">
               {needsFirstUser
                 ? 'This is the first account on this install. You\u2019ll be the owner.'
-                : mode === 'sign-in'
-                  ? 'Sign in to your books.'
-                  : 'New here? Set up your account in a few seconds.'}
+                : cfg.oidcEnabled
+                  ? `Sign in with email or ${cfg.oidcDisplayName}. Additional users (e.g. your accountant) should use SSO after the owner adds them in your identity provider.`
+                  : 'Sign in with your email and password.'}
             </p>
 
             {cfg.oidcEnabled && !needsFirstUser && (
@@ -116,7 +101,7 @@ function LoginPage() {
                   full
                   onClick={ssoSignIn}
                   disabled={busy}
-                  className="!h-11"
+                  className="!min-h-11"
                 >
                   Continue with {cfg.oidcDisplayName}
                 </Button>
@@ -125,7 +110,7 @@ function LoginPage() {
             )}
 
             <form onSubmit={submit} className="flex flex-col gap-4">
-              {mode === 'sign-up' && (
+              {needsFirstUser && (
                 <Field label="Name" htmlFor="name">
                   <Input
                     id="name"
@@ -150,16 +135,18 @@ function LoginPage() {
               <Field
                 label="Password"
                 htmlFor="password"
-                hint={mode === 'sign-up' ? 'Minimum 12 characters.' : undefined}
+                hint={needsFirstUser ? 'Minimum 12 characters.' : undefined}
                 required
               >
                 <Input
                   id="password"
                   type="password"
-                  autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+                  autoComplete={
+                    needsFirstUser ? 'new-password' : 'current-password'
+                  }
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  minLength={mode === 'sign-up' ? 12 : undefined}
+                  minLength={needsFirstUser ? 12 : undefined}
                   required
                 />
               </Field>
@@ -170,25 +157,24 @@ function LoginPage() {
                 </div>
               )}
 
-              <Button intent="brand" type="submit" disabled={busy} className="!h-11">
+              <Button
+                intent="brand"
+                type="submit"
+                disabled={busy}
+                className="!min-h-11"
+              >
                 {busy
                   ? 'Working…'
-                  : mode === 'sign-in'
-                    ? 'Sign in'
-                    : 'Create account'}
+                  : needsFirstUser
+                    ? 'Create account'
+                    : 'Sign in'}
               </Button>
             </form>
 
-            {!needsFirstUser && (
-              <p className="text-sm text-[var(--color-ink-soft)] mt-5 text-center">
-                {mode === 'sign-in' ? "Don't have an account? " : 'Already have one? '}
-                <button
-                  type="button"
-                  onClick={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
-                  className="text-[var(--color-brand)] hover:underline font-medium"
-                >
-                  {mode === 'sign-in' ? 'Create one' : 'Sign in'}
-                </button>
+            {!needsFirstUser && !cfg.oidcEnabled && (
+              <p className="text-[13px] text-[var(--color-warning)] mt-4 leading-relaxed">
+                To invite additional users, configure OIDC in your environment
+                (OIDC_ISSUER_URL, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET).
               </p>
             )}
           </CardBody>
@@ -217,7 +203,16 @@ function Divider({ children }: { children: React.ReactNode }) {
 function Logo() {
   return (
     <span className="inline-flex items-center justify-center w-8 h-8 rounded-[10px] bg-[var(--color-brand)] text-white">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M4 5h11a3 3 0 0 1 3 3v11" />
         <path d="M4 5v13a2 2 0 0 0 2 2h12" />
         <path d="M8 9h6M8 13h4" />

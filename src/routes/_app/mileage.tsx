@@ -23,9 +23,14 @@ import {
   deleteMileage,
   getMileageRateCentsPerMile,
 } from '~/server/mileage.functions'
+import { getMileageRateForDate } from '~/server/settings.functions'
+import { formatCentsPerMile } from '~/lib/mileage-rates'
 import { microToDecimal, parseQuantityToMicro } from '~/lib/money'
 import { fmtDate, todayISO } from '~/lib/date'
 import { ModalDialog } from './services'
+import { FormGrid } from '~/components/form-grid'
+import { PendingFileField } from '~/components/pending-file-field'
+import { uploadPendingAttachment } from '~/components/attachment-upload'
 
 export const Route = createFileRoute('/_app/mileage')({
   loader: async () => ({
@@ -55,8 +60,15 @@ function MileagePage() {
         title="Mileage"
         subtitle={
           <span>
-            IRS standard business rate{' '}
-            <span className="font-medium text-[var(--color-ink)]">${(defaultRateCents / 100).toFixed(2)}/mile</span>.
+            Current-year rate{' '}
+            <span className="font-medium text-[var(--color-ink)]">
+              {formatCentsPerMile(defaultRateCents)}¢/mile
+            </span>
+            . Manage rates in{' '}
+            <a href="/settings" className="text-[var(--color-brand)] hover:underline">
+              Settings
+            </a>
+            .
             Each entry credits Owner's Contribution and debits Vehicle Expense.
           </span>
         }
@@ -106,6 +118,35 @@ function MileagePage() {
             action={<Button intent="brand" onClick={() => setOpen(true)}>Log your first trip</Button>}
           />
         ) : (
+          <>
+          <div className="sm:hidden divide-y divide-[var(--color-border)]">
+            {entries.map((e) => (
+              <div key={e.id} className="px-4 py-4 flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{e.purpose}</div>
+                    <div className="text-[13px] text-[var(--color-ink-soft)] mt-0.5">
+                      {fmtDate(e.tripDate)} · {microToDecimal(e.milesMicro, 1)} mi
+                    </div>
+                  </div>
+                  <Money cents={e.amountCents} className="text-[16px] font-semibold shrink-0" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-[var(--color-ink-faint)] tabular">
+                    ${(e.rateMicroPerMile / 1_000_000).toFixed(2)}/mi
+                  </span>
+                  <button
+                    onClick={() => del(e.id)}
+                    className="text-[var(--color-ink-faint)] hover:text-[var(--color-negative)] p-2 min-h-11 min-w-11 flex items-center justify-center"
+                    aria-label="Delete trip"
+                  >
+                    <Icon d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:block">
           <Table>
             <THead>
               <tr>
@@ -142,6 +183,8 @@ function MileagePage() {
               ))}
             </tbody>
           </Table>
+          </div>
+          </>
         )}
       </Card>
 
@@ -172,8 +215,20 @@ function MileageDialog({
   const [miles, setMiles] = useState('')
   const [purpose, setPurpose] = useState('')
   const [rateCents, setRateCents] = useState(defaultRateCents)
+  const [rateYear, setRateYear] = useState(new Date().getFullYear())
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+
+  async function loadRateForDate(date: string) {
+    try {
+      const r = await getMileageRateForDate({ data: { tripDate: date } })
+      setRateCents(r.centsPerMile)
+      setRateYear(r.taxYear)
+    } catch {
+      /* keep current rate */
+    }
+  }
 
   const computed = useMemo(() => {
     try {
@@ -189,9 +244,12 @@ function MileageDialog({
     setBusy(true)
     setError(null)
     try {
-      await createMileage({
+      const result = await createMileage({
         data: { tripDate, miles, purpose, rateCentsPerMile: rateCents },
       })
+      if (pendingFile) {
+        await uploadPendingAttachment(pendingFile, 'mileage', result.id)
+      }
       onSaved()
     } catch (err: any) {
       setError(err?.message ?? String(err))
@@ -203,13 +261,16 @@ function MileageDialog({
   return (
     <ModalDialog title="Log a trip" onClose={onClose}>
       <form onSubmit={save} className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <FormGrid>
           <Field label="Trip date" htmlFor="m-date" required>
             <Input
               id="m-date"
               type="date"
               value={tripDate}
-              onChange={(e) => setTripDate(e.target.value)}
+              onChange={(e) => {
+                setTripDate(e.target.value)
+                void loadRateForDate(e.target.value)
+              }}
               required
             />
           </Field>
@@ -225,7 +286,7 @@ function MileageDialog({
               autoFocus
             />
           </Field>
-        </div>
+        </FormGrid>
         <Field label="Purpose" htmlFor="m-purpose" required>
           <Input
             id="m-purpose"
@@ -235,10 +296,12 @@ function MileageDialog({
             required
           />
         </Field>
+        <PendingFileField file={pendingFile} onFileChange={setPendingFile} />
+
         <Field
           label="Rate (¢/mile)"
           htmlFor="m-rate"
-          hint={`IRS default: ${defaultRateCents}¢/mile. Override only if you have reason to.`}
+          hint={`Rate for ${rateYear}: ${formatCentsPerMile(rateCents)}¢/mile. Override only if needed.`}
         >
           <Input
             id="m-rate"

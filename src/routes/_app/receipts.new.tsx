@@ -19,6 +19,10 @@ import {
   openInvoicesForCustomer,
 } from '~/server/receipts.functions'
 import { todayISO, fmtDate } from '~/lib/date'
+import { FormGrid } from '~/components/form-grid'
+import { FormActions } from '~/components/form-actions'
+import { PendingFileField } from '~/components/pending-file-field'
+import { uploadPendingAttachment } from '~/components/attachment-upload'
 
 const searchSchema = z.object({ invoiceId: z.string().optional() })
 
@@ -42,6 +46,7 @@ function NewReceipt() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [autoInvoiceNotice, setAutoInvoiceNotice] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
 
   // Load customer from invoice param if needed
   useEffect(() => {
@@ -98,6 +103,9 @@ function NewReceipt() {
           memo: memo || null,
         },
       })
+      if (pendingFile) {
+        await uploadPendingAttachment(pendingFile, 'cash_receipt', result.id)
+      }
       if (result.autoInvoice) {
         setAutoInvoiceNotice(
           `Auto-created invoice ${result.autoInvoice.number} for this payment.`,
@@ -122,10 +130,10 @@ function NewReceipt() {
         subtitle="Apply this against an open invoice. If there isn't one, leave Invoice blank and we'll create one for you."
       />
 
-      <form onSubmit={submit} className="space-y-6 max-w-[640px]">
+      <form onSubmit={submit} className="space-y-6">
         <Card>
           <CardBody className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <FormGrid>
               <Field label="Customer" htmlFor="r-cus" required>
                 <Select
                   id="r-cus"
@@ -152,7 +160,7 @@ function NewReceipt() {
                   required
                 />
               </Field>
-            </div>
+            </FormGrid>
 
             <Field
               label="Apply to invoice"
@@ -173,7 +181,7 @@ function NewReceipt() {
               </Select>
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
+            <FormGrid>
               <Field label="Amount" htmlFor="r-amt" required>
                 <Input
                   id="r-amt"
@@ -194,7 +202,7 @@ function NewReceipt() {
                   <option value="other">Other</option>
                 </Select>
               </Field>
-            </div>
+            </FormGrid>
 
             <Field label="Memo" htmlFor="r-memo">
               <Textarea
@@ -204,6 +212,8 @@ function NewReceipt() {
                 placeholder="Reference number, notes…"
               />
             </Field>
+
+            <PendingFileField file={pendingFile} onFileChange={setPendingFile} />
 
             {pickedInvoice && (
               <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-[13px] flex items-center justify-between">
@@ -230,14 +240,14 @@ function NewReceipt() {
           </CardBody>
         </Card>
 
-        <div className="flex items-center justify-end gap-2">
+        <FormActions>
           <Link to="/receipts">
             <Button intent="ghost" type="button">Cancel</Button>
           </Link>
           <Button intent="brand" type="submit" disabled={busy}>
             {busy ? 'Saving…' : 'Log payment'}
           </Button>
-        </div>
+        </FormActions>
       </form>
     </>
   )

@@ -33,5 +33,19 @@ export const getSession = createServerFn({ method: 'GET' })
   })
 
 export const getAuthConfig = createServerFn({ method: 'GET' }).handler(
-  async () => ({ oidcEnabled, oidcDisplayName }),
+  async () => {
+    const { db } = await import('~/db/client')
+    const { sql } = await import('drizzle-orm')
+    const rows = (await db.all(sql`SELECT COUNT(*) as c FROM user`)) as Array<{
+      c: number
+    }>
+    const userCount = Number(rows[0]?.c ?? 0)
+    const allowPublicSignUp = process.env.ALLOW_PUBLIC_SIGNUP === 'true'
+    return {
+      oidcEnabled,
+      oidcDisplayName,
+      needsFirstUser: userCount === 0,
+      allowPublicSignUp,
+    }
+  },
 )

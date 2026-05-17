@@ -8,6 +8,21 @@ mkdirSync(SHOTS, { recursive: true })
 // Single end-to-end happy path. Assumes the server is running with a fresh
 // DB (`bun run db:reset && bun run dev`).
 
+const viewports = [
+  { name: 'compact', width: 390, height: 844 },
+  { name: 'comfortable', width: 768, height: 1024 },
+  { name: 'spacious', width: 1280, height: 800 },
+] as const
+
+for (const vp of viewports) {
+  test(`login layout at ${vp.name} (${vp.width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height })
+    await page.goto(`${BASE}/login`)
+    await expect(page.getByText('simple-books')).toBeVisible()
+    await expect(page.locator('form')).toBeVisible()
+  })
+}
+
 test('the full sole-proprietor flow works', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
 
@@ -74,13 +89,13 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.fill('#m-purpose', 'Client visit — Acme')
   await page.getByRole('button', { name: /log trip/i }).click()
   await expect(page.getByText('Client visit — Acme')).toBeVisible()
-  await expect(page.getByText('$28.00').first()).toBeVisible()
+  await expect(page.getByText('$29.00').first()).toBeVisible()
 
   // ---- Reports: balance sheet should balance ----
   await page.getByRole('link', { name: /reports/i }).click()
   await expect(page.getByText('Balance Sheet').first()).toBeVisible()
   await expect(page.getByText(/in balance/i)).toBeVisible()
-  // Cash should be $350, AR $0, owners contribution from mileage $28
+  // Cash should be $350, AR $0, owners contribution from mileage $29 (40 mi × 72.5¢)
   await expect(page.getByText('$350.00').first()).toBeVisible()
   await page.waitForLoadState('networkidle')
   await page.screenshot({ path: `${SHOTS}/05-balance-sheet.png` })
