@@ -58,10 +58,10 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   // ---- Create an invoice ----
   await page.getByRole('link', { name: /^invoices/i }).click()
   await page.getByRole('link', { name: /create your first invoice/i }).click()
-  // First line: pick Consulting from select (Custom is selected by default)
-  await page.locator('select').nth(1).selectOption({ label: 'Consulting' })
-  // Quantity default is 1; change to 2
-  await page.locator('input[inputmode="decimal"]').first().fill('2')
+  // Desktop layout uses the line-items table (mobile selects are hidden at 1440px)
+  const lineItems = page.getByRole('table')
+  await lineItems.locator('select').selectOption({ label: 'Consulting' })
+  await lineItems.locator('input[inputmode="decimal"]').first().fill('2')
   await page.getByRole('button', { name: /create invoice/i }).click()
   await page.waitForURL(/\/invoices\/inv_/)
   await expect(page.getByText(/invoice 2026-/i)).toBeVisible()
