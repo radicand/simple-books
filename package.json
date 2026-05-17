@@ -12,7 +12,9 @@
     "db:seed": "bun run scripts/seed.ts",
     "db:reset": "rm -rf data/simple-books.db data/simple-books.db-shm data/simple-books.db-wal && bun run db:migrate && bun run db:seed",
     "auth:secret": "bun -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:e2e": "bash scripts/e2e.sh",
+    "test:e2e:quick": "bash scripts/e2e.sh --skip-build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1048.0",

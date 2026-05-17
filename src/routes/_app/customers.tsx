@@ -95,8 +95,8 @@ function CustomersPage() {
           value={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
           onSaved={async () => {
-            setEditing(null)
             await router.invalidate()
+            setTimeout(() => setEditing(null), 0)
           }}
         />
       )}

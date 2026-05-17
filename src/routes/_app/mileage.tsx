@@ -27,7 +27,7 @@ import { getMileageRateForDate } from '~/server/settings.functions'
 import { formatCentsPerMile } from '~/lib/mileage-rates'
 import { microToDecimal, parseQuantityToMicro } from '~/lib/money'
 import { fmtDate, todayISO } from '~/lib/date'
-import { ModalDialog } from './services'
+import { ModalDialog, useModalClose } from './services'
 import { FormGrid } from '~/components/form-grid'
 import { PendingFileField } from '~/components/pending-file-field'
 import { uploadPendingAttachment } from '~/components/attachment-upload'
@@ -192,10 +192,7 @@ function MileagePage() {
         <MileageDialog
           defaultRateCents={defaultRateCents}
           onClose={() => setOpen(false)}
-          onSaved={async () => {
-            setOpen(false)
-            await router.invalidate()
-          }}
+          onSaved={() => router.invalidate()}
         />
       )}
     </>
@@ -209,7 +206,24 @@ function MileageDialog({
 }: {
   defaultRateCents: number
   onClose: () => void
-  onSaved: () => void
+  onSaved: () => void | Promise<void>
+}) {
+  return (
+    <ModalDialog title="Log a trip" onClose={onClose} deferCloseMs={300}>
+      <MileageTripForm
+        defaultRateCents={defaultRateCents}
+        onSaved={onSaved}
+      />
+    </ModalDialog>
+  )
+}
+
+function MileageTripForm({
+  defaultRateCents,
+  onSaved,
+}: {
+  defaultRateCents: number
+  onSaved: () => void | Promise<void>
 }) {
   const [tripDate, setTripDate] = useState(todayISO())
   const [miles, setMiles] = useState('')
@@ -219,6 +233,7 @@ function MileageDialog({
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const { close, closeNow } = useModalClose()
 
   async function loadRateForDate(date: string) {
     try {
@@ -250,7 +265,8 @@ function MileageDialog({
       if (pendingFile) {
         await uploadPendingAttachment(pendingFile, 'mileage', result.id)
       }
-      onSaved()
+      await onSaved()
+      close()
     } catch (err: any) {
       setError(err?.message ?? String(err))
     } finally {
@@ -259,8 +275,7 @@ function MileageDialog({
   }
 
   return (
-    <ModalDialog title="Log a trip" onClose={onClose}>
-      <form onSubmit={save} className="flex flex-col gap-4">
+      <form onSubmit={save} noValidate className="flex flex-col gap-4">
         <FormGrid>
           <Field label="Trip date" htmlFor="m-date" required>
             <Input
@@ -326,12 +341,11 @@ function MileageDialog({
         {error && <div className="text-[13px] text-[var(--color-negative)]">{error}</div>}
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]">
-          <Button intent="ghost" type="button" onClick={onClose}>Cancel</Button>
+          <Button intent="ghost" type="button" onClick={closeNow}>Cancel</Button>
           <Button intent="brand" type="submit" disabled={busy || computed <= 0}>
             {busy ? 'Saving…' : 'Log trip'}
           </Button>
         </div>
       </form>
-    </ModalDialog>
   )
 }

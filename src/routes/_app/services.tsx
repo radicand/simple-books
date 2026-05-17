@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import {
   PageHeader,
   Card,
@@ -236,21 +236,48 @@ function ServiceDialog({
   )
 }
 
+const ModalCloseContext = createContext<{
+  close: () => void
+  closeNow: () => void
+}>({ close: () => {}, closeNow: () => {} })
+
+export function useModalClose() {
+  return useContext(ModalCloseContext)
+}
+
 export function ModalDialog({
   title,
   onClose,
   children,
   size = 'md',
+  deferCloseMs = 0,
 }: {
   title: string
   onClose: () => void
   children: React.ReactNode
   size?: 'md' | 'lg'
+  deferCloseMs?: number
 }) {
+  const [shield, setShield] = useState(false)
+
+  function requestClose() {
+    if (deferCloseMs <= 0) {
+      onClose()
+      return
+    }
+    setShield(true)
+    window.setTimeout(() => {
+      onClose()
+      setShield(false)
+    }, deferCloseMs)
+  }
+
   return (
-    <div
+    <ModalCloseContext.Provider value={{ close: requestClose, closeNow: onClose }}>
+      {shield && <div className="fixed inset-0 z-[60]" aria-hidden />}
+      <div
       className="fixed inset-0 z-40 flex items-end sm:items-start justify-center p-0 sm:p-4 sm:p-8 bg-[oklch(0.22_0.012_270/0.4)] backdrop-blur-[2px]"
-      onClick={onClose}
+      onClick={requestClose}
     >
       <div
         className={`w-full sm:mt-12 max-h-[min(92dvh,100%)] sm:max-h-none flex flex-col overflow-hidden ${size === 'lg' ? 'sm:max-w-[820px]' : 'sm:max-w-[480px]'} bg-[var(--color-surface)] border border-[var(--color-border)] rounded-t-[20px] sm:rounded-[14px] shadow-[var(--shadow-pop)]`}
@@ -259,7 +286,7 @@ export function ModalDialog({
         <div className="px-4 sm:px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between shrink-0">
           <h3 className="text-[15px] font-semibold tracking-tight">{title}</h3>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] p-2 min-h-11 min-w-11 flex items-center justify-center rounded-[8px]"
             aria-label="Close"
           >
@@ -269,5 +296,6 @@ export function ModalDialog({
         <div className="p-4 sm:p-5 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
+    </ModalCloseContext.Provider>
   )
 }

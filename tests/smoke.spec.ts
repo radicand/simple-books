@@ -88,15 +88,22 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.waitForURL(/\/receipts/, { timeout: 5000 })
 
   // ---- Log a mileage trip ----
-  await page.getByRole('link', { name: /^mileage$/i }).click()
+  await page.getByRole('complementary').getByRole('link', { name: 'Mileage' }).click()
+  await page.waitForURL(/\/mileage/)
   await page.getByRole('button', { name: /log your first trip/i }).click()
-  await expect(page.getByRole('heading', { name: /log a trip/i })).toBeVisible()
-  await page.getByLabel('Miles').fill('40')
-  await page.getByLabel('Purpose').fill('Client visit - Acme')
+  const tripDialog = page.getByRole('heading', { name: /log a trip/i })
+  await expect(tripDialog).toBeVisible()
+  // pressSequentially ensures React controlled inputs update state (fill alone can miss onChange).
+  await page.getByLabel('Miles').pressSequentially('40')
+  await page.getByLabel('Purpose').pressSequentially('Client visit - Acme')
   const logTrip = page.getByRole('button', { name: /^log trip$/i })
   await expect(logTrip).toBeEnabled()
   await logTrip.click()
-  await expect(visibleText(page, 'Client visit - Acme').first()).toBeVisible({ timeout: 15_000 })
+  await expect(tripDialog).toBeHidden({ timeout: 10_000 })
+  await expect(page).toHaveURL(/\/mileage/)
+  await expect(
+    page.getByRole('main').getByText('Client visit - Acme').filter({ visible: true }).first(),
+  ).toBeVisible()
   await expect(visibleText(page, '$29.00').first()).toBeVisible()
 
   // ---- Reports: balance sheet should balance ----
