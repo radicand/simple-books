@@ -181,7 +181,7 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
     const { cashReceipts, invoices } = await import('~/db/schema')
-    const { eq } = await import('drizzle-orm')
+    const { eq, sql } = await import('drizzle-orm')
 
     const [r] = await db
       .select()
@@ -204,8 +204,25 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
         ],
       })
       tx.delete(cashReceipts).where(eq(cashReceipts.id, data.id)).run()
+
+      const [inv] = tx
+        .select()
+        .from(invoices)
+        .where(eq(invoices.id, r.invoiceId))
+        .all() as Array<{ subtotalCents: number }>
+      const totalPaid = (
+        tx
+          .select({
+            t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
+          })
+          .from(cashReceipts)
+          .where(eq(cashReceipts.invoiceId, r.invoiceId))
+          .all() as Array<{ t: number }>
+      )[0]?.t as number
+      const status =
+        inv && Number(totalPaid ?? 0) >= inv.subtotalCents ? 'paid' : 'open'
       tx.update(invoices)
-        .set({ status: 'open' })
+        .set({ status })
         .where(eq(invoices.id, r.invoiceId))
         .run()
     })

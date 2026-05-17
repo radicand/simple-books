@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { eq } from 'drizzle-orm'
 import { auth } from '~/lib/auth'
+import { safeContentDispositionFilename } from '~/lib/attachment-security'
 import { db } from '~/db/client'
 import { attachments } from '~/db/schema'
 import {
@@ -34,7 +35,7 @@ export const Route = createFileRoute('/api/attachments/$id')({
         return new Response(bytes, {
           headers: {
             'Content-Type': row.mimeType,
-            'Content-Disposition': `inline; filename="${row.fileName}"`,
+            'Content-Disposition': safeContentDispositionFilename(row.fileName),
           },
         })
       },

@@ -28,7 +28,6 @@ export NODE_ENV=production
 export BETTER_AUTH_URL="$BASE"
 export BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-local-e2e-secret-at-least-32-characters-long}"
 export DATABASE_URL=./data/simple-books.db
-export ALLOW_PUBLIC_SIGNUP=true
 export PORT
 
 if lsof -i ":${PORT}" -sTCP:LISTEN -t >/dev/null 2>&1; then

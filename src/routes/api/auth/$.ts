@@ -1,16 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { sql } from 'drizzle-orm'
-import { auth } from '~/lib/auth'
+import { auth, oidcEnabled } from '~/lib/auth'
 import { db } from '~/db/client'
 
-async function guardSignUp(request: Request): Promise<Response | null> {
-  if (process.env.ALLOW_PUBLIC_SIGNUP === 'true') return null
-  const url = new URL(request.url)
-  if (!url.pathname.includes('/sign-up/email')) return null
+async function userCount(): Promise<number> {
   const rows = (await db.all(sql`SELECT COUNT(*) as c FROM user`)) as Array<{
     c: number
   }>
-  if (Number(rows[0]?.c ?? 0) === 0) return null
+  return Number(rows[0]?.c ?? 0)
+}
+
+async function guardSignUp(request: Request): Promise<Response | null> {
+  const url = new URL(request.url)
+  if (!url.pathname.includes('/sign-up/email')) return null
+  if ((await userCount()) === 0) return null
   return Response.json(
     {
       message:
@@ -20,8 +23,22 @@ async function guardSignUp(request: Request): Promise<Response | null> {
   )
 }
 
+async function guardEmailSignIn(request: Request): Promise<Response | null> {
+  if (!oidcEnabled) return null
+  const url = new URL(request.url)
+  if (!url.pathname.includes('/sign-in/email')) return null
+  return Response.json(
+    {
+      message:
+        'Email sign-in is disabled when SSO is configured. Use your identity provider to sign in.',
+    },
+    { status: 403 },
+  )
+}
+
 async function handleAuth(request: Request) {
-  const blocked = await guardSignUp(request)
+  const blocked =
+    (await guardSignUp(request)) ?? (await guardEmailSignIn(request))
   if (blocked) return blocked
   return auth.handler(request)
 }

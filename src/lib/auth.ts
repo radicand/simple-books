@@ -1,7 +1,9 @@
 import '@tanstack/react-start/server-only'
 import { betterAuth } from 'better-auth'
+import { APIError } from 'better-auth/api'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { genericOAuth } from 'better-auth/plugins'
+import { sql } from 'drizzle-orm'
 import { db } from '~/db/client'
 import * as authSchema from '~/db/auth-schema'
 
@@ -43,6 +45,18 @@ const accountLinking = oidcConfigured
     }
   : { enabled: true as const }
 
+async function assertBootstrapUserSlot(): Promise<void> {
+  const rows = (await db.all(sql`SELECT COUNT(*) as c FROM user`)) as Array<{
+    c: number
+  }>
+  if (Number(rows[0]?.c ?? 0) >= 1) {
+    throw new APIError('FORBIDDEN', {
+      message:
+        'An account already exists on this install. Sign in instead of creating another user.',
+    })
+  }
+}
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET,
@@ -51,11 +65,20 @@ export const auth = betterAuth({
     schema: authSchema,
     usePlural: false,
   }),
+  databaseHooks: {
+    user: {
+      create: {
+        before: async () => {
+          await assertBootstrapUserSlot()
+        },
+      },
+    },
+  },
   account: {
     accountLinking,
   },
   emailAndPassword: {
-    enabled: true,
+    enabled: !oidcConfigured,
     autoSignIn: true,
     minPasswordLength: 12,
     maxPasswordLength: 128,

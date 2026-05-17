@@ -172,8 +172,8 @@ Both reports render as semantic HTML tables (printable). No charts in MVP.
 - **CSRF**: Better Auth's signed-cookie + origin check.
 - **Rate limiting**: Better Auth's defaults; `/sign-in/email` tightened to
   3 attempts / 10s.
-- **Multi-user**: first account via email sign-up; additional users via OIDC
-  only (public sign-up disabled server-side unless `ALLOW_PUBLIC_SIGNUP=true`).
+- **Multi-user**: one bootstrap owner (email sign-up if OIDC is off, SSO if OIDC is on);
+  no further email sign-up; additional users via OIDC when configured.
   All users share one set of books (no row-level permissions).
 - **Authorization**: every business `createServerFn` attaches the
   `requireAuthMiddleware` (defined in `src/lib/auth.functions.ts`), which

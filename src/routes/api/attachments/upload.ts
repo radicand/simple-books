@@ -1,7 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { auth } from '~/lib/auth'
+import {
+  assertSafeSourceId,
+  buildStorageKey,
+} from '~/lib/attachment-security'
 import { newId } from '~/lib/ids'
-import { putObject, validateUpload } from '~/lib/storage.server'
+import {
+  ALLOWED_MIME_TYPES,
+  putObject,
+  validateUploadBytes,
+  type AllowedMimeType,
+} from '~/lib/storage.server'
 
 export const Route = createFileRoute('/api/attachments/upload')({
   server: {
@@ -31,19 +40,40 @@ export const Route = createFileRoute('/api/attachments/upload')({
         }
 
         try {
-          validateUpload(file.type || 'application/octet-stream', file.size)
+          assertSafeSourceId(sourceId)
+          const typedSource = sourceType as
+            | 'invoice'
+            | 'cash_receipt'
+            | 'mileage'
+
+          const { assertSourceExists } = await import(
+            '~/server/attachments.functions'
+          )
+          await assertSourceExists(typedSource, sourceId)
+
+          const declared = (file.type || 'application/octet-stream') as string
+          if (!ALLOWED_MIME_TYPES.includes(declared as AllowedMimeType)) {
+            throw new Error('Only JPEG, PNG, WebP, and PDF files are allowed.')
+          }
+
           const bytes = new Uint8Array(await file.arrayBuffer())
-          const storageKey = `${sourceType}/${sourceId}/${newId('blob')}`
-          await putObject(storageKey, bytes, file.type || 'application/octet-stream')
+          validateUploadBytes(bytes, declared)
+
+          const storageKey = buildStorageKey(
+            typedSource,
+            sourceId,
+            newId('blob'),
+          )
+          await putObject(storageKey, bytes, declared)
           const { registerAttachment } = await import(
             '~/server/attachments.functions'
           )
           const id = await registerAttachment({
-            sourceType: sourceType as 'invoice' | 'cash_receipt' | 'mileage',
+            sourceType: typedSource,
             sourceId,
             storageKey,
             fileName: file.name,
-            mimeType: file.type || 'application/octet-stream',
+            mimeType: declared,
             sizeBytes: file.size,
           })
           return Response.json({ id, storageKey })

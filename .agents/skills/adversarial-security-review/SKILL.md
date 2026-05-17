@@ -83,7 +83,7 @@ rg 'from ['\''\"]~/db|from ['\''\"]~/lib/storage' src --glob '!*.server.ts'
 **Project threat model ([multi-user-auth](../multi-user-auth/SKILL.md)):**
 
 - After bootstrap, **all authenticated users share one ledger** — not IDOR between users; **is** IDOR if endpoints skip auth or leak to anonymous callers.
-- `getAuthConfig` is intentionally unauthenticated — confirm it exposes only `{ oidcEnabled, needsFirstUser, allowPublicSignUp }`, never secrets or row counts beyond boolean needs.
+- `getAuthConfig` is intentionally unauthenticated — confirm it exposes only `{ oidcEnabled, needsFirstUser, emailAuthEnabled, oidcDisplayName }`, never secrets or row counts beyond boolean needs.
 
 **Adversarial questions:**
 
@@ -91,7 +91,7 @@ rg 'from ['\''\"]~/db|from ['\''\"]~/lib/storage' src --glob '!*.server.ts'
 - Can `POST` handlers be invoked with `GET` or vice versa?
 - Race: two parallel sign-ups when `user` count is 0?
 - OIDC account linking: attacker IdP email matching owner → takeover? (document operator IdP trust)
-- `ALLOW_PUBLIC_SIGNUP=true` in prod — flag as **critical misconfig**, not code bug
+- Public email sign-up after bootstrap — should be impossible (hook + route guards)
 
 **Attachments (high value):** upload/register uses `sourceId` without verifying the parent record exists or is in a valid state — test **orphan blob**, **cross-link** (attach to another user’s invoice ID if IDs are guessable), **MIME sniff bypass** (`Content-Type` vs magic bytes). See [document-storage](../document-storage/SKILL.md).
 

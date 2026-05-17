@@ -181,16 +181,20 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
     const [inv] = await db.select().from(invoices).where(eq(invoices.id, data.id))
     if (!inv) throw new Error('Invoice not found.')
     if (inv.status === 'void') return { ok: true }
-    const receiptCount = await db
-      .select({ c: sql<number>`COUNT(*)` })
-      .from(cashReceipts)
-      .where(eq(cashReceipts.invoiceId, data.id))
-    if (Number(receiptCount[0]?.c ?? 0) > 0) {
-      throw new Error('Cannot void an invoice with payments. Delete the payments first.')
-    }
+
     const { deleteAttachmentsForSource } = await import('~/server/attachments.functions')
     await deleteAttachmentsForSource('invoice', data.id)
     db.transaction((tx) => {
+      const receiptCount = (
+        tx
+          .select({ c: sql<number>`COUNT(*)` })
+          .from(cashReceipts)
+          .where(eq(cashReceipts.invoiceId, data.id))
+          .all() as Array<{ c: number }>
+      )[0]
+      if (Number(receiptCount?.c ?? 0) > 0) {
+        throw new Error('Cannot void an invoice with payments. Delete the payments first.')
+      }
       tx.update(invoices).set({ status: 'void' }).where(eq(invoices.id, data.id)).run()
       postJournalSync(tx, {
         date: todayISO(),

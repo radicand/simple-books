@@ -29,6 +29,8 @@ function LoginPage() {
   const [busy, setBusy] = useState(false)
 
   const needsFirstUser = cfg.needsFirstUser
+  const showEmailForm = cfg.emailAuthEnabled
+  const showOidc = cfg.oidcEnabled
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -84,94 +86,107 @@ function LoginPage() {
         <Card>
           <CardBody className="!p-7">
             <h1 className="text-[20px] font-semibold tracking-tight mb-1">
-              {needsFirstUser ? 'Create your owner account' : 'Welcome back'}
+              {needsFirstUser
+                ? showOidc
+                  ? 'Set up your owner account'
+                  : 'Create your owner account'
+                : 'Welcome back'}
             </h1>
             <p className="text-sm text-[var(--color-ink-soft)] mb-6">
-              {needsFirstUser
-                ? 'This is the first account on this install. You\u2019ll be the owner.'
-                : cfg.oidcEnabled
-                  ? `Sign in with email or ${cfg.oidcDisplayName}. Additional users (e.g. your accountant) should use SSO after the owner adds them in your identity provider.`
-                  : 'Sign in with your email and password.'}
+              {needsFirstUser && showOidc
+                ? `Sign in with ${cfg.oidcDisplayName} to create the first account on this install.`
+                : needsFirstUser
+                  ? 'This is the first account on this install. You\u2019ll be the owner.'
+                  : showOidc
+                    ? `Sign in with ${cfg.oidcDisplayName}. Additional users (e.g. your accountant) must be added in your identity provider.`
+                    : 'Sign in with your email and password.'}
             </p>
 
-            {cfg.oidcEnabled && !needsFirstUser && (
-              <>
-                <Button
-                  intent="neutral"
-                  full
-                  onClick={ssoSignIn}
-                  disabled={busy}
-                  className="!min-h-11"
-                >
-                  Continue with {cfg.oidcDisplayName}
-                </Button>
-                <Divider>or use email</Divider>
-              </>
-            )}
-
-            <form onSubmit={submit} className="flex flex-col gap-4">
-              {needsFirstUser && (
-                <Field label="Name" htmlFor="name">
-                  <Input
-                    id="name"
-                    autoComplete="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Alex Carter"
-                  />
-                </Field>
-              )}
-              <Field label="Email" htmlFor="email" required>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                />
-              </Field>
-              <Field
-                label="Password"
-                htmlFor="password"
-                hint={needsFirstUser ? 'Minimum 12 characters.' : undefined}
-                required
-              >
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete={
-                    needsFirstUser ? 'new-password' : 'current-password'
-                  }
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={needsFirstUser ? 12 : undefined}
-                  required
-                />
-              </Field>
-
-              {error && (
-                <div className="text-[13px] text-[var(--color-negative)] bg-[oklch(0.97_0.03_25)] border border-[oklch(0.88_0.07_25)] rounded-[10px] px-3 py-2">
-                  {error}
-                </div>
-              )}
-
+            {showOidc && (
               <Button
-                intent="brand"
-                type="submit"
+                intent="neutral"
+                full
+                onClick={ssoSignIn}
                 disabled={busy}
                 className="!min-h-11"
               >
-                {busy
-                  ? 'Working…'
-                  : needsFirstUser
-                    ? 'Create account'
-                    : 'Sign in'}
+                Continue with {cfg.oidcDisplayName}
               </Button>
-            </form>
+            )}
 
-            {!needsFirstUser && !cfg.oidcEnabled && (
+            {showEmailForm && showOidc && <Divider>or use email</Divider>}
+
+            {showEmailForm && (
+              <form onSubmit={submit} className="flex flex-col gap-4">
+                {needsFirstUser && (
+                  <Field label="Name" htmlFor="name">
+                    <Input
+                      id="name"
+                      autoComplete="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Alex Carter"
+                    />
+                  </Field>
+                )}
+                <Field label="Email" htmlFor="email" required>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </Field>
+                <Field
+                  label="Password"
+                  htmlFor="password"
+                  hint={needsFirstUser ? 'Minimum 12 characters.' : undefined}
+                  required
+                >
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete={
+                      needsFirstUser ? 'new-password' : 'current-password'
+                    }
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={needsFirstUser ? 12 : undefined}
+                    required
+                  />
+                </Field>
+
+                {error && (
+                  <div className="text-[13px] text-[var(--color-negative)] bg-[oklch(0.97_0.03_25)] border border-[oklch(0.88_0.07_25)] rounded-[10px] px-3 py-2">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  intent="brand"
+                  type="submit"
+                  disabled={busy}
+                  className="!min-h-11"
+                >
+                  {busy
+                    ? 'Working…'
+                    : needsFirstUser
+                      ? 'Create account'
+                      : 'Sign in'}
+                </Button>
+              </form>
+            )}
+
+            {!showEmailForm && error && (
+              <div className="text-[13px] text-[var(--color-negative)] bg-[oklch(0.97_0.03_25)] border border-[oklch(0.88_0.07_25)] rounded-[10px] px-3 py-2 mt-4">
+                {error}
+              </div>
+            )}
+
+            {!needsFirstUser && !showOidc && (
               <p className="text-[13px] text-[var(--color-warning)] mt-4 leading-relaxed">
                 To invite additional users, configure OIDC in your environment
                 (OIDC_ISSUER_URL, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET).

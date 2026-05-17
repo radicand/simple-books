@@ -40,12 +40,11 @@ export const getAuthConfig = createServerFn({ method: 'GET' }).handler(
       c: number
     }>
     const userCount = Number(rows[0]?.c ?? 0)
-    const allowPublicSignUp = process.env.ALLOW_PUBLIC_SIGNUP === 'true'
     return {
       oidcEnabled,
       oidcDisplayName,
       needsFirstUser: userCount === 0,
-      allowPublicSignUp,
+      emailAuthEnabled: !oidcEnabled,
     }
   },
 )

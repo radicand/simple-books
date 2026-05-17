@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { requireAuthMiddleware } from '~/lib/auth.functions'
 import { newId } from '~/lib/ids'
 import {
-  centsPerMileToMicro,
   microPerMileToCents,
   taxYearFromDate,
 } from '~/lib/mileage-rates'
@@ -12,11 +11,7 @@ import { postJournalSync, ACCT } from '~/server/posting'
 
 const FALLBACK_MICRO = 725_000
 
-async function resolveRateMicroPerMile(
-  tripDate: string,
-  overrideCents?: number,
-): Promise<number> {
-  if (overrideCents != null) return centsPerMileToMicro(overrideCents)
+async function resolveRateMicroPerMile(tripDate: string): Promise<number> {
   const { db } = await import('~/db/client')
   const { mileageRates } = await import('~/db/schema')
   const { eq } = await import('drizzle-orm')
@@ -31,7 +26,6 @@ async function resolveRateMicroPerMile(
 const createSchema = z.object({
   tripDate: z.string(),
   miles: z.string().min(1),
-  rateCentsPerMile: z.number().min(0).max(500).optional(),
   purpose: z.string().min(1).max(300),
 })
 
@@ -67,10 +61,7 @@ export const createMileage = createServerFn({ method: 'POST' })
 
     const milesMicro = parseQuantityToMicro(data.miles)
     if (milesMicro <= 0) throw new Error('Miles must be > 0.')
-    const rateMicroPerMile = await resolveRateMicroPerMile(
-      data.tripDate,
-      data.rateCentsPerMile,
-    )
+    const rateMicroPerMile = await resolveRateMicroPerMile(data.tripDate)
     const product = BigInt(milesMicro) * BigInt(rateMicroPerMile)
     const half = 5_000_000_000n
     const amountCents = Number(

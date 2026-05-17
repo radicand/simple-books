@@ -260,7 +260,7 @@ function MileageTripForm({
     setError(null)
     try {
       const result = await createMileage({
-        data: { tripDate, miles, purpose, rateCentsPerMile: rateCents },
+        data: { tripDate, miles, purpose },
       })
       if (pendingFile) {
         await uploadPendingAttachment(pendingFile, 'mileage', result.id)
@@ -313,21 +313,9 @@ function MileageTripForm({
         </Field>
         <PendingFileField file={pendingFile} onFileChange={setPendingFile} />
 
-        <Field
-          label="Rate (¢/mile)"
-          htmlFor="m-rate"
-          hint={`Rate for ${rateYear}: ${formatCentsPerMile(rateCents)}¢/mile. Override only if needed.`}
-        >
-          <Input
-            id="m-rate"
-            type="number"
-            min={0}
-            max={200}
-            className="tabular"
-            value={rateCents}
-            onChange={(e) => setRateCents(Number(e.target.value || 0))}
-          />
-        </Field>
+        <p className="text-[13px] text-[var(--color-ink-soft)]">
+          IRS rate for {rateYear}: {formatCentsPerMile(rateCents)}¢/mile
+        </p>
 
         <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 flex items-center justify-between">
           <div className="text-[12.5px] text-[var(--color-ink-soft)]">

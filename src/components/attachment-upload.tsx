@@ -37,7 +37,7 @@ export function AttachmentUpload({
     <Field label={label} hint={hint}>
       <input
         type="file"
-        accept="image/*,application/pdf"
+        accept="image/jpeg,image/png,image/webp,application/pdf"
         className="block w-full text-sm text-[var(--color-ink-soft)] file:mr-3 file:py-2 file:px-3 file:rounded-[10px] file:border file:border-[var(--color-border-strong)] file:bg-[var(--color-surface)] file:text-[var(--color-ink)] file:font-medium file:cursor-pointer min-h-11"
         onChange={(e) => {
           setFile(e.target.files?.[0] ?? null)

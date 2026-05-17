@@ -47,6 +47,37 @@ export const deleteAttachment = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+export async function assertSourceExists(
+  sourceType: 'invoice' | 'cash_receipt' | 'mileage',
+  sourceId: string,
+): Promise<void> {
+  const { db } = await import('~/db/client')
+  const { invoices, cashReceipts, mileageEntries } = await import('~/db/schema')
+  const { eq } = await import('drizzle-orm')
+
+  if (sourceType === 'invoice') {
+    const [row] = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(eq(invoices.id, sourceId))
+    if (!row) throw new Error('Invoice not found.')
+    return
+  }
+  if (sourceType === 'cash_receipt') {
+    const [row] = await db
+      .select({ id: cashReceipts.id })
+      .from(cashReceipts)
+      .where(eq(cashReceipts.id, sourceId))
+    if (!row) throw new Error('Receipt not found.')
+    return
+  }
+  const [row] = await db
+    .select({ id: mileageEntries.id })
+    .from(mileageEntries)
+    .where(eq(mileageEntries.id, sourceId))
+  if (!row) throw new Error('Mileage entry not found.')
+}
+
 export async function deleteAttachmentsForSource(
   sourceType: 'invoice' | 'cash_receipt' | 'mileage',
   sourceId: string,

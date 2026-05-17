@@ -28,7 +28,7 @@ File-level map for adversarial review. Cross-check on every audit.
 | Path | Risk |
 |------|------|
 | `src/lib/auth.ts` | OIDC, cookies, `accountLinking` |
-| `src/routes/api/auth/$.ts` | `ALLOW_PUBLIC_SIGNUP`, sign-up guard |
+| `src/routes/api/auth/$.ts` | Bootstrap sign-up guard, OIDC disables email sign-in |
 | `.env` / Helm values | `BETTER_AUTH_SECRET`, `OIDC_*`, `S3_*` |
 
 **MVP model:** no `user_id` on business tables — **any logged-in user is trusted for all data**. Findings about “user A saw user B’s invoice” are **Notes** unless product promises isolation. Findings about **no login** are Critical.
@@ -41,7 +41,7 @@ File-level map for adversarial review. Cross-check on every audit.
 | `src/server/attachments.functions.ts` | `registerAttachment` callable from upload route; delete by id only |
 | Upload flow | Orphan keys if DB insert fails after `putObject` |
 
-Review: magic-byte validation, `Content-Disposition` header injection via `fileName`, presigned URL lifetime.
+Review: magic-byte validation, `Content-Disposition` header injection via `fileName`, presigned URL lifetime. Upload quotas are accepted risk (operator-only, shared tenant).
 
 ## Import protection
 
