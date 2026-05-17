@@ -58,6 +58,9 @@ helm template sb deploy/helm/simple-books \
 
 - **replicaCount: 1** — bundled SQLite; PVC at `/app/data`.
 - Set `BETTER_AUTH_URL` to the public URL; OIDC redirect must match.
+- **OIDC / SSO:** With `OIDC_*` set, successful IdP login auto-provisions users
+  (new email) or links to an existing user (same email). Control access in your
+  IdP; do not point casual social OAuth apps at the install unless that is intended.
 - Prefer `existingSecretName` + External Secrets over `secretEnv` in values.
 - Health: `GET /api/health`
 - Documented values: `deploy/helm/simple-books/values.yaml` + `values.schema.json`

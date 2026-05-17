@@ -73,6 +73,16 @@ Fill in the four `OIDC_*` env vars in `.env`. The discovery URL is built
 from `OIDC_ISSUER_URL`. Register the redirect URI as
 `<BETTER_AUTH_URL>/api/auth/oauth2/callback/oidc` in your IdP.
 
+**SSO behavior (operators):** When OIDC is configured, successful sign-in
+from your IdP will **auto-provision** a new app user if that email is not
+already in the database, or **link** the OIDC identity to an existing user
+when the email matches (for example the owner who first signed up with
+email/password). Access control is entirely through your identity provider
+— do not wire up arbitrary “social login” OAuth apps (Google, GitHub, etc.)
+unless you intend everyone who can use that client to reach the books.
+After the first user exists, additional people should be added in your IdP,
+not via public email sign-up.
+
 ## Production build
 
 ```bash

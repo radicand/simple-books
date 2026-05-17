@@ -32,6 +32,17 @@ if (oidcConfigured) {
   )
 }
 
+const accountLinking = oidcConfigured
+  ? {
+      enabled: true as const,
+      // Trust the operator-configured IdP so SSO can link to an existing
+      // email/password owner (same email) or provision a new user on first sign-in.
+      trustedProviders: ['oidc'] as const,
+      // MVP does not verify local emails; requireLocalEmailVerified would block linking.
+      requireLocalEmailVerified: false,
+    }
+  : { enabled: true as const }
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET,
@@ -40,6 +51,9 @@ export const auth = betterAuth({
     schema: authSchema,
     usePlural: false,
   }),
+  account: {
+    accountLinking,
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,

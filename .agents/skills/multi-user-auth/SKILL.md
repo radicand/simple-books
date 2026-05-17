@@ -27,3 +27,15 @@ description: Documents bootstrap sign-up, OIDC-only additional users, and ALLOW_
 ## Better Auth
 
 `src/lib/auth.ts` — `genericOAuth` plugin when OIDC env vars set.
+
+### OIDC sign-in / account linking
+
+When `OIDC_*` is configured, `account.accountLinking` sets `trustedProviders: ['oidc']`
+and `requireLocalEmailVerified: false` (local email verification is off in MVP).
+
+- **New email** → Better Auth creates a user on first successful OIDC callback.
+- **Existing email** (e.g. owner created via email/password) → OIDC account is
+  linked to that user; fixes `account_not_linked` when the IdP returns the same email.
+
+Operators control who can sign in via the IdP, not via Google/GitHub buttons.
+Document this in README / deployment notes for anyone enabling SSO.
