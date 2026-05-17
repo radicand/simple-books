@@ -1,6 +1,9 @@
-# skill: adding a new server function
+---
+name: adding-a-server-fn
+description: Creates TanStack Start createServerFn RPC endpoints with requireAuthMiddleware and dynamic server imports in simple-books. Use when adding *.functions.ts files, server mutations, or fixing import-protection build errors.
+---
 
-The minimal recipe.
+# Adding a server function
 
 ```ts
 // src/server/foo.functions.ts
@@ -15,7 +18,6 @@ export const createFoo = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
-    // context.session is guaranteed by the middleware.
     const { db } = await import('~/db/client')
     const { someTable } = await import('~/db/schema')
     const [row] = await db
@@ -28,20 +30,15 @@ export const createFoo = createServerFn({ method: 'POST' })
 
 ## Rules
 
-- **Auth via middleware**, not by calling helper functions at the top of files.
-  `requireAuthMiddleware` injects `session` into `context` and throws 401 if missing.
-  This pattern keeps `*.functions.ts` files free of server-only static imports
-  (which the import-protection plugin would reject).
-- **DB and other server-only modules** must be imported **inside the handler body**
-  via `await import('~/db/client')`. The handler body is stripped from the
-  client bundle; top-level imports are not.
-- Use `z.parse` inside `inputValidator` so callers get a typed result.
+- **Auth via middleware** — `requireAuthMiddleware` injects `session` into `context` and throws 401 if missing. Keeps `*.functions.ts` free of server-only static imports.
+- **DB and server-only modules** — `await import('~/db/client')` inside the handler body only.
+- Use `z.parse` inside `inputValidator` for typed callers.
 - Mutations: `method: 'POST'`. Reads: `method: 'GET'`.
-- Return plain JSON-serializable data — Date, Map, Set will not round-trip.
-- Do NOT trust authorization derived from route guards. The middleware re-checks
-  on every RPC call.
-- If you need a transaction, wrap with `db.transaction((tx) => { ... })` — Drizzle's
-  bun-sqlite tx is synchronous.
+- Return JSON-serializable data — Date, Map, Set will not round-trip.
+- Do NOT trust route `beforeLoad` for authorization; middleware re-checks every RPC.
+- Transactions: `db.transaction((tx) => { ... })` — Drizzle bun-sqlite tx is synchronous.
+
+Import-protection details: [tanstack-start-bun](../tanstack-start-bun/SKILL.md).
 
 ## Calling from a route loader
 
@@ -56,5 +53,5 @@ export const Route = createFileRoute('/_app/foos')({
 
 ```ts
 const result = await createFoo({ data: { name: 'Bar' } })
-await router.invalidate()  // refetch loaders
+await router.invalidate()
 ```

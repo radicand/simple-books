@@ -12,16 +12,18 @@ Sole-proprietor bookkeeping on **Bun + TanStack Start + Drizzle (SQLite)**.
 
 ## Skills (read before editing)
 
-See [`.agents/skills/index.md`](.agents/skills/index.md):
+Agent Skills in [`.agents/skills/`](.agents/skills/) (`skill-name/SKILL.md`):
 
-- `tanstack-start-bun.md` — dev/build, import-protection
-- `accounting-posting.md` — journal recipes
-- `adding-a-server-fn.md` — RPC pattern
-- `ui-components.md` — UI primitives
-- `responsive-layout.md` — breakpoints & shell
-- `settings-and-mileage-rates.md` — per-year IRS rates
-- `document-storage.md` — attachments & S3
-- `multi-user-auth.md` — OIDC-only after bootstrap
+- `tanstack-start-bun` — dev/build, import-protection
+- `accounting-posting` — journal recipes
+- `adding-a-server-fn` — RPC pattern
+- `ui-components` — UI primitives
+- `responsive-layout` — breakpoints & shell
+- `settings-and-mileage-rates` — per-year IRS rates
+- `document-storage` — attachments & S3
+- `multi-user-auth` — OIDC-only after bootstrap
+- `deployment` — Docker, Helm, release-please
+- `playing-with-playwright` — smoke test runbook
 
 ## Key paths
 

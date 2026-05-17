@@ -1,17 +1,11 @@
-# skill: tanstack-start + bun
+---
+name: tanstack-start-bun
+description: Documents TanStack Start + Bun + Nitro stack layout, dev commands, and import-protection rules for simple-books. Use when scaffolding, building, debugging Vite/Start, or fixing client/server import errors.
+---
 
-Stack used by simple-books. Copy-paste friendly.
+# TanStack Start + Bun
 
-## Versions (May 2026)
-
-- `bun` 1.3+
-- `@tanstack/react-start` 1.168+
-- `@tanstack/react-router` 1.170+
-- `nitro` 3 (`nitro/vite` plugin, **not** the deprecated v2 plugin)
-- `vite` 8, `@vitejs/plugin-react` 6
-- `tailwindcss` v4 (`@tailwindcss/vite`)
-- `drizzle-orm` 0.45+, `bun:sqlite`
-- `better-auth` 1.6+ with `genericOAuth` plugin
+See [versions](references/versions.md) for pinned package versions.
 
 ## Project layout
 
@@ -68,6 +62,7 @@ Two pieces solve this in practice:
    server-only modules from a `.functions.ts` file will fail the prod build.
 
 See `src/lib/auth.functions.ts` for the middleware definitions used app-wide.
+See [adding-a-server-fn](../adding-a-server-fn/SKILL.md) for the RPC recipe.
 
 ## Gotchas
 

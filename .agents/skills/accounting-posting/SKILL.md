@@ -1,13 +1,16 @@
-# skill: posting a new business event
+---
+name: accounting-posting
+description: Documents double-entry journal posting via postJournalSync, ACCT codes, and MVP recipes in simple-books. Use when adding business events, invoices, payments, mileage, reversals, or ledger entries.
+---
 
-simple-books is a **full double-entry** system. Every business event must
-produce a balanced journal entry (sum of debits = sum of credits).
+# Posting a business event
+
+Every business event must produce a balanced journal entry (sum of debits = sum of credits).
 
 ## Where to post
 
 Use `postJournalSync(tx, { date, memo, source, sourceId, lines })` from
-`src/server/invoices.functions.ts` (it lives there because it relies on
-sync Drizzle/`bun:sqlite` transactions). The function:
+`src/server/invoices.functions.ts` (sync Drizzle/`bun:sqlite` transactions). The function:
 
 - Validates debits = credits.
 - Throws on a zero-amount entry.
@@ -27,7 +30,7 @@ Pulled from `ACCT` in `src/server/posting.server.ts`. Don't hardcode strings.
 | 4000 | `SERVICES_REVENUE`  | Revenue from billed services   |
 | 6100 | `VEHICLE_EXPENSE`   | Mileage-based vehicle expense  |
 
-## Recipes (the only ones in MVP)
+## Recipes (MVP only)
 
 ```
 Issue invoice:        DR 1100 A/R                 CR 4000 Services Revenue
@@ -40,18 +43,15 @@ Reverse a receipt:    DR 1100 A/R                 CR 1000 Cash    (reversal)
 
 ## Adding a new event
 
-1. Add the inputs to a `*.functions.ts` createServerFn.
-2. Validate with Zod, `ensureSession()`, then open a `db.transaction((tx) => ...)`.
-3. Insert your business row.
+1. Add inputs to a `*.functions.ts` createServerFn (see [adding-a-server-fn](../adding-a-server-fn/SKILL.md)).
+2. Validate with Zod, then open `db.transaction((tx) => ...)`.
+3. Insert the business row.
 4. Call `postJournalSync(tx, { ... })` with the right `ACCT.*` codes.
-5. Update the related invoice status if it's now settled.
-6. If the event can be undone, also implement a reversal in another endpoint
-   (debits/credits swapped) — never edit a posted journal entry.
+5. Update related invoice status if settled.
+6. If undoable, implement a reversal endpoint (debits/credits swapped) — never edit a posted journal entry.
 
 ## Money + quantities
 
 - Money: integer cents. Use `parseDollarsToCents` and `fmtCents`.
-- Quantities (hours, miles): integer micro-units (×1e6). Use
-  `parseQuantityToMicro` and `microToDecimal`.
-- Line amount = `Math.round(qtyMicro * unitPriceCents / 1e6)` (use BigInt to
-  avoid overflow on big numbers).
+- Quantities (hours, miles): integer micro-units (×1e6). Use `parseQuantityToMicro` and `microToDecimal`.
+- Line amount = `Math.round(qtyMicro * unitPriceCents / 1e6)` (use BigInt to avoid overflow).

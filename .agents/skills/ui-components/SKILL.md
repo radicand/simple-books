@@ -1,7 +1,11 @@
-# skill: UI components in simple-books
+---
+name: ui-components
+description: Maps UI needs to simple-books primitives in src/components/ui and related layout components. Use when building pages, forms, tables, badges, or styling new features.
+---
 
-All primitives live in `src/components/ui/index.tsx`. No external UI library —
-keep dependencies trim and visual consistency tight.
+# UI components
+
+All primitives live in `src/components/ui/index.tsx`. No external UI library.
 
 ## When to reach for what
 
@@ -29,12 +33,13 @@ keep dependencies trim and visual consistency tight.
 - Status: always `Badge`, never inline color text.
 - Headings: `PageHeader` for the top; `<h3>` 14–15px for card titles.
 - Body: 13–14px default, ink-soft (`text-[var(--color-ink-soft)]`) for prose.
-- Color: brand for primary action; restrained accents otherwise. Avoid pure
-  black; use the `--color-ink*` tokens.
-- Density: generous whitespace. The product feels calm, not packed.
+- Color: brand for primary action; restrained accents. Use `--color-ink*` tokens.
+- Density: generous whitespace; calm, not packed.
 
 ## Layout convention
 
 - Each `_app/...` route renders inside `<main>` capped at 1200px wide.
 - Page = `<PageHeader />` then content blocks (cards, tables).
-- Forms align labels above inputs; submits live in a right-aligned footer.
+- Forms: labels above inputs; submits in a right-aligned footer.
+
+Breakpoints and shell: [responsive-layout](../responsive-layout/SKILL.md).

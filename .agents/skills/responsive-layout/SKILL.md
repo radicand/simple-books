@@ -1,4 +1,9 @@
-# skill: responsive layout
+---
+name: responsive-layout
+description: Documents mobile-primary breakpoints, app shell, and viewport checklist for simple-books. Use when changing layout, navigation, or testing responsive UI.
+---
+
+# Responsive layout
 
 ## Breakpoints
 

@@ -1,4 +1,9 @@
-# skill: document storage
+---
+name: document-storage
+description: Documents local and S3 attachment storage, upload API, and cleanup for simple-books. Use when working with file uploads, attachments, Garage/S3 config, or IRS retention.
+---
+
+# Document storage
 
 ## Config
 

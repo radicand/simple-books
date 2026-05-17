@@ -1,4 +1,9 @@
-# skill: multi-user auth
+---
+name: multi-user-auth
+description: Documents bootstrap sign-up, OIDC-only additional users, and ALLOW_PUBLIC_SIGNUP guard in simple-books. Use when changing auth, login, OIDC env vars, or user access.
+---
+
+# Multi-user auth
 
 ## Model
 

@@ -1,4 +1,9 @@
-# skill: deployment (Docker, Helm, release-please)
+---
+name: deployment
+description: Documents Docker image, Helm chart, release-please versioning, and K8s constraints for simple-books. Use when deploying, releasing, or configuring production infrastructure.
+---
+
+# Deployment
 
 ## Layout
 
@@ -13,13 +18,9 @@
 
 ## Version bumps
 
-release-please on `main` opens a PR that updates:
+release-please on `main` opens a PR updating `package.json` version, Helm `Chart.yaml` (`version` + `appVersion`), and `CHANGELOG.md`.
 
-- `package.json` `version`
-- `deploy/helm/simple-books/Chart.yaml` (`version` + `appVersion` via generic updater)
-- `CHANGELOG.md`
-
-Merge that PR; the GitHub Release + `v*` tag triggers `helm-release.yml` (chart `.tgz` on the release).
+Merge that PR; GitHub Release + `v*` tag triggers `helm-release.yml` (chart `.tgz` on the release).
 
 ## Local
 
@@ -44,4 +45,4 @@ helm template sb deploy/helm/simple-books --set secretEnv.BETTER_AUTH_SECRET=x
 
 ## CI smoke test
 
-Same as local: `db:reset`, `start`, Playwright. Workflow sets `ALLOW_PUBLIC_SIGNUP=true` for the sign-up flow.
+Same as local: `db:reset`, `start`, Playwright. Workflow sets `ALLOW_PUBLIC_SIGNUP=true` for sign-up.

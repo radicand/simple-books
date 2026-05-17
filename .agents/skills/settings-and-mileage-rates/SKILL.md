@@ -1,4 +1,9 @@
-# skill: settings & mileage rates
+---
+name: settings-and-mileage-rates
+description: Documents mileage_rates schema, rate_micro_per_mile conversion, and settings UI for IRS per-year rates in simple-books. Use when editing mileage rates, trip calculations, or /settings.
+---
+
+# Settings and mileage rates
 
 ## Schema
 
@@ -20,3 +25,5 @@
 ## Seed
 
 `scripts/seed.ts` — IRS defaults 2023–2026 (idempotent).
+
+Mileage journal posting: [accounting-posting](../accounting-posting/SKILL.md).

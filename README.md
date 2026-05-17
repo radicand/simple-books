@@ -28,7 +28,7 @@ without ever asking the user to read one.
 
 Behind the scenes every event becomes a balanced journal entry — see
 [`DESIGN.md`](DESIGN.md) §5–7 for the data model and posting rules and
-[`.agents/skills/accounting-posting.md`](.agents/skills/accounting-posting.md)
+[`.agents/skills/accounting-posting/SKILL.md`](.agents/skills/accounting-posting/SKILL.md)
 for the engineering recipe.
 
 ## Stack
@@ -97,8 +97,8 @@ The test walks the entire flow and (re)generates the screenshots in
 - [`DESIGN.md`](DESIGN.md) — architecture, data model, posting rules,
   security posture, visual design system. The source of truth for design
   consistency.
-- [`.agents/skills/`](.agents/skills) — small, focused how-to notes (one
-  per task) so the next iteration can short-circuit re-research.
+- [`.agents/skills/`](.agents/skills) — [Agent Skills](https://agentskills.io/)
+  (`skill-name/SKILL.md`) for stack, posting, UI, deployment, and testing.
 
 ## A tour
 
