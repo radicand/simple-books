@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/radicand/simple-books/compare/v0.1.3...v0.1.4) (2026-05-17)
+
+
+### Bug Fixes
+
+* link oidc with existing accounts ([a7f7ad7](https://github.com/radicand/simple-books/commit/a7f7ad7632d2deb0b63cc7de57152c9f13e78253))
+
 ## [0.1.3](https://github.com/radicand/simple-books/compare/v0.1.2...v0.1.3) (2026-05-17)
 
 
