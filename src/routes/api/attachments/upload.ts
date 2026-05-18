@@ -47,7 +47,7 @@ export const Route = createFileRoute('/api/attachments/upload')({
             | 'mileage'
 
           const { assertSourceExists } = await import(
-            '~/server/attachments.functions'
+            '~/server/attachments.server'
           )
           await assertSourceExists(typedSource, sourceId)
 
@@ -66,7 +66,7 @@ export const Route = createFileRoute('/api/attachments/upload')({
           )
           await putObject(storageKey, bytes, declared)
           const { registerAttachment } = await import(
-            '~/server/attachments.functions'
+            '~/server/attachments.server'
           )
           const id = await registerAttachment({
             sourceType: typedSource,

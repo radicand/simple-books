@@ -7,7 +7,11 @@ import {
   parseQuantityToMicro,
 } from '~/lib/money'
 import { todayISO, isoYear } from '~/lib/date'
-import { ACCT, postJournalSync, nextInvoiceNumber } from '~/server/posting'
+import {
+  nextInvoiceNumber,
+  reverseInvoiceJournal,
+  postInvoiceJournal,
+} from '~/server/posting'
 
 const lineInputSchema = z.object({
   serviceProductId: z.string().nullable().optional(),
@@ -23,6 +27,31 @@ const createSchema = z.object({
   memo: z.string().max(500).optional().nullable(),
   lines: z.array(lineInputSchema).min(1),
 })
+
+const updateSchema = createSchema.extend({ id: z.string() })
+
+function parseInvoiceLines(lines: z.infer<typeof lineInputSchema>[]) {
+  return lines.map((l, i) => {
+    const qtyMicro = parseQuantityToMicro(l.quantity)
+    const unitPriceCents = parseDollarsToCents(l.unitPrice)
+    const product = BigInt(qtyMicro) * BigInt(unitPriceCents)
+    const half = 500_000n
+    const rounded =
+      product >= 0n
+        ? (product + half) / 1_000_000n
+        : -((-product + half) / 1_000_000n)
+    const amountCents = Number(rounded)
+    return {
+      id: newId('iln'),
+      serviceProductId: l.serviceProductId || null,
+      description: l.description.trim(),
+      quantityMicro: qtyMicro,
+      unitPriceCents,
+      amountCents,
+      position: i,
+    }
+  })
+}
 
 export const listInvoices = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(async () => {
   // auth enforced by requireAuthMiddleware
@@ -113,26 +142,7 @@ export const createInvoice = createServerFn({ method: 'POST' }).middleware([requ
     const { db, sqlite } = await import('~/db/client')
     const { invoices, invoiceLines } = await import('~/db/schema')
 
-    const linesParsed = data.lines.map((l, i) => {
-      const qtyMicro = parseQuantityToMicro(l.quantity)
-      const unitPriceCents = parseDollarsToCents(l.unitPrice)
-      const product = BigInt(qtyMicro) * BigInt(unitPriceCents)
-      const half = 500_000n
-      const rounded =
-        product >= 0n
-          ? (product + half) / 1_000_000n
-          : -((-product + half) / 1_000_000n)
-      const amountCents = Number(rounded)
-      return {
-        id: newId('iln'),
-        serviceProductId: l.serviceProductId || null,
-        description: l.description.trim(),
-        quantityMicro: qtyMicro,
-        unitPriceCents,
-        amountCents,
-        position: i,
-      }
-    })
+    const linesParsed = parseInvoiceLines(data.lines)
     const subtotal = linesParsed.reduce((s, l) => s + l.amountCents, 0)
     if (subtotal <= 0) throw new Error('Invoice total must be > 0.')
 
@@ -156,18 +166,73 @@ export const createInvoice = createServerFn({ method: 'POST' }).middleware([requ
       for (const l of linesParsed) {
         tx.insert(invoiceLines).values({ ...l, invoiceId: id }).run()
       }
-      postJournalSync(tx, {
-        date: data.issuedOn,
-        memo: `Invoice ${number}`,
-        source: 'invoice',
-        sourceId: id,
-        lines: [
-          { accountCode: ACCT.AR, debitCents: subtotal },
-          { accountCode: ACCT.SERVICES_REVENUE, creditCents: subtotal },
-        ],
+      postInvoiceJournal(tx, {
+        invoiceId: id,
+        invoiceNumber: number,
+        issuedOn: data.issuedOn,
+        subtotalCents: subtotal,
       })
     })
     return { id, number }
+  })
+
+export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
+  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .handler(async ({ data }) => {
+    const { db } = await import('~/db/client')
+    const { invoices, invoiceLines, cashReceipts } = await import('~/db/schema')
+    const { eq, sql } = await import('drizzle-orm')
+
+    const [inv] = await db.select().from(invoices).where(eq(invoices.id, data.id))
+    if (!inv) throw new Error('Invoice not found.')
+    if (inv.status === 'void') throw new Error('Cannot edit a void invoice.')
+    if (inv.status !== 'open') {
+      throw new Error('Only open invoices can be edited. Delete payments first.')
+    }
+
+    const receiptCount = (
+      await db
+        .select({ c: sql<number>`COUNT(*)` })
+        .from(cashReceipts)
+        .where(eq(cashReceipts.invoiceId, data.id))
+    )[0]
+    if (Number(receiptCount?.c ?? 0) > 0) {
+      throw new Error('Cannot edit an invoice with payments. Delete the payments first.')
+    }
+
+    const linesParsed = parseInvoiceLines(data.lines)
+    const subtotal = linesParsed.reduce((s, l) => s + l.amountCents, 0)
+    if (subtotal <= 0) throw new Error('Invoice total must be > 0.')
+
+    db.transaction((tx) => {
+      reverseInvoiceJournal(tx, {
+        invoiceId: inv.id,
+        invoiceNumber: inv.number,
+        subtotalCents: inv.subtotalCents,
+        date: inv.issuedOn,
+      })
+      tx.delete(invoiceLines).where(eq(invoiceLines.invoiceId, data.id)).run()
+      for (const l of linesParsed) {
+        tx.insert(invoiceLines).values({ ...l, invoiceId: data.id }).run()
+      }
+      tx.update(invoices)
+        .set({
+          customerId: data.customerId,
+          issuedOn: data.issuedOn,
+          dueOn: data.dueOn,
+          memo: data.memo?.trim() || null,
+          subtotalCents: subtotal,
+        })
+        .where(eq(invoices.id, data.id))
+        .run()
+      postInvoiceJournal(tx, {
+        invoiceId: inv.id,
+        invoiceNumber: inv.number,
+        issuedOn: data.issuedOn,
+        subtotalCents: subtotal,
+      })
+    })
+    return { id: data.id, number: inv.number }
   })
 
 export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
@@ -182,7 +247,7 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
     if (!inv) throw new Error('Invoice not found.')
     if (inv.status === 'void') return { ok: true }
 
-    const { deleteAttachmentsForSource } = await import('~/server/attachments.functions')
+    const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
     await deleteAttachmentsForSource('invoice', data.id)
     db.transaction((tx) => {
       const receiptCount = (
@@ -196,15 +261,11 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
         throw new Error('Cannot void an invoice with payments. Delete the payments first.')
       }
       tx.update(invoices).set({ status: 'void' }).where(eq(invoices.id, data.id)).run()
-      postJournalSync(tx, {
+      reverseInvoiceJournal(tx, {
+        invoiceId: data.id,
+        invoiceNumber: inv.number,
+        subtotalCents: inv.subtotalCents,
         date: todayISO(),
-        memo: `Void invoice ${inv.number}`,
-        source: 'reversal',
-        sourceId: data.id,
-        lines: [
-          { accountCode: ACCT.SERVICES_REVENUE, debitCents: inv.subtotalCents },
-          { accountCode: ACCT.AR, creditCents: inv.subtotalCents },
-        ],
       })
     })
     return { ok: true }

@@ -16,13 +16,15 @@ without ever asking the user to read one.
 - **Customers** — keep it minimal; just enough to attach to invoices.
 - **Invoices** — line items, automatic numbering (`YYYY-NNNN`), status
   (open · paid · void). Records only — no email, no payment processing,
-  no PDFs in MVP.
+  no PDFs in MVP. Edit open invoices with no payments (reverses and
+  reposts the journal entry).
 - **Cash receipts** — log payments as they come in. If there isn't an
   invoice yet, one is created automatically and the same transaction posts
-  it. Method-aware (cash, check, card, transfer, other).
-- **Mileage** — record business driving with the IRS standard rate
-  (default `$0.70/mile`); each trip credits Owner's Contribution and debits
-  Vehicle Expense.
+  it. Method-aware (cash, check, card, transfer, other). Edit payments
+  later; stand-alone payments keep the auto-created invoice in sync.
+- **Mileage** — record business driving with the IRS standard rates
+  (default `$0.725/mile` in 2026); each trip credits Owner's Contribution and debits
+  Vehicle Expense. Trips can be edited after the fact.
 - **Reports** — Balance Sheet and Cash Flow, rendered as readable tables.
   No charts, by design. Assets always equal Liabilities + Equity.
 

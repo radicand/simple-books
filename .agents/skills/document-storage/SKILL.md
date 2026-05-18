@@ -29,4 +29,4 @@ description: Documents local and S3 attachment storage, upload API, and cleanup 
 
 ## Cleanup
 
-`deleteAttachmentsForSource` on receipt/mileage delete and invoice void.
+`deleteAttachmentsForSource` in `src/server/attachments.server.ts` — called on receipt/mileage delete and invoice void.

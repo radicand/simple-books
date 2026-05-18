@@ -1,12 +1,10 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   PageHeader,
   Card,
   CardBody,
   Button,
-  Field,
-  Input,
   Table,
   THead,
   Th,
@@ -19,18 +17,14 @@ import {
 } from '~/components/ui'
 import {
   listMileage,
-  createMileage,
   deleteMileage,
   getMileageRateCentsPerMile,
 } from '~/server/mileage.functions'
-import { getMileageRateForDate } from '~/server/settings.functions'
 import { formatCentsPerMile } from '~/lib/mileage-rates'
-import { microToDecimal, parseQuantityToMicro } from '~/lib/money'
-import { fmtDate, todayISO } from '~/lib/date'
-import { ModalDialog, useModalClose } from './services'
-import { FormGrid } from '~/components/form-grid'
-import { PendingFileField } from '~/components/pending-file-field'
-import { uploadPendingAttachment } from '~/components/attachment-upload'
+import { microToDecimal } from '~/lib/money'
+import { fmtDate } from '~/lib/date'
+import { ModalDialog } from './services'
+import { MileageTripForm } from '~/components/mileage-trip-form'
 
 export const Route = createFileRoute('/_app/mileage/')({
   loader: async () => ({
@@ -222,6 +216,7 @@ function MileagePage() {
   )
 }
 
+
 function MileageDialog({
   defaultRateCents,
   onClose,
@@ -235,128 +230,12 @@ function MileageDialog({
     <ModalDialog title="Log a trip" onClose={onClose} deferCloseMs={300}>
       <MileageTripForm
         defaultRateCents={defaultRateCents}
-        onSaved={onSaved}
+        onSaved={async () => {
+          await onSaved()
+          onClose()
+        }}
+        onCancel={onClose}
       />
     </ModalDialog>
-  )
-}
-
-function MileageTripForm({
-  defaultRateCents,
-  onSaved,
-}: {
-  defaultRateCents: number
-  onSaved: () => void | Promise<void>
-}) {
-  const [tripDate, setTripDate] = useState(todayISO())
-  const [miles, setMiles] = useState('')
-  const [purpose, setPurpose] = useState('')
-  const [rateCents, setRateCents] = useState(defaultRateCents)
-  const [rateYear, setRateYear] = useState(new Date().getFullYear())
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [pendingFile, setPendingFile] = useState<File | null>(null)
-  const { close, closeNow } = useModalClose()
-
-  async function loadRateForDate(date: string) {
-    try {
-      const r = await getMileageRateForDate({ data: { tripDate: date } })
-      setRateCents(r.centsPerMile)
-      setRateYear(r.taxYear)
-    } catch {
-      /* keep current rate */
-    }
-  }
-
-  const computed = useMemo(() => {
-    try {
-      const m = parseQuantityToMicro(miles || '0')
-      return Math.round((m * rateCents) / 1_000_000)
-    } catch {
-      return 0
-    }
-  }, [miles, rateCents])
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    try {
-      const result = await createMileage({
-        data: { tripDate, miles, purpose },
-      })
-      if (pendingFile) {
-        await uploadPendingAttachment(pendingFile, 'mileage', result.id)
-      }
-      await onSaved()
-      close()
-    } catch (err: any) {
-      setError(err?.message ?? String(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-      <form onSubmit={save} noValidate className="flex flex-col gap-4">
-        <FormGrid>
-          <Field label="Trip date" htmlFor="m-date" required>
-            <Input
-              id="m-date"
-              type="date"
-              value={tripDate}
-              onChange={(e) => {
-                setTripDate(e.target.value)
-                void loadRateForDate(e.target.value)
-              }}
-              required
-            />
-          </Field>
-          <Field label="Miles" htmlFor="m-miles" required>
-            <Input
-              id="m-miles"
-              inputMode="decimal"
-              className="tabular"
-              placeholder="42.3"
-              value={miles}
-              onChange={(e) => setMiles(e.target.value)}
-              required
-              autoFocus
-            />
-          </Field>
-        </FormGrid>
-        <Field label="Purpose" htmlFor="m-purpose" required>
-          <Input
-            id="m-purpose"
-            placeholder="Client visit — Acme Co."
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            required
-          />
-        </Field>
-        <PendingFileField file={pendingFile} onFileChange={setPendingFile} />
-
-        <p className="text-[13px] text-[var(--color-ink-soft)]">
-          IRS rate for {rateYear}: {formatCentsPerMile(rateCents)}¢/mile
-        </p>
-
-        <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 flex items-center justify-between">
-          <div className="text-[12.5px] text-[var(--color-ink-soft)]">
-            Deduction <span className="text-[var(--color-ink-faint)]">(miles × rate)</span>
-          </div>
-          <div className="text-[17px] font-semibold tabular">
-            <Money cents={computed} />
-          </div>
-        </div>
-
-        {error && <div className="text-[13px] text-[var(--color-negative)]">{error}</div>}
-
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-border)]">
-          <Button intent="ghost" type="button" onClick={closeNow}>Cancel</Button>
-          <Button intent="brand" type="submit" disabled={busy || computed <= 0}>
-            {busy ? 'Saving…' : 'Log trip'}
-          </Button>
-        </div>
-      </form>
   )
 }

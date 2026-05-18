@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireAuthMiddleware } from '~/lib/auth.functions'
-import { newId } from '~/lib/ids'
 
 export const listAttachments = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
@@ -46,82 +45,3 @@ export const deleteAttachment = createServerFn({ method: 'POST' })
     db.delete(attachments).where(eq(attachments.id, data.id)).run()
     return { ok: true }
   })
-
-export async function assertSourceExists(
-  sourceType: 'invoice' | 'cash_receipt' | 'mileage',
-  sourceId: string,
-): Promise<void> {
-  const { db } = await import('~/db/client')
-  const { invoices, cashReceipts, mileageEntries } = await import('~/db/schema')
-  const { eq } = await import('drizzle-orm')
-
-  if (sourceType === 'invoice') {
-    const [row] = await db
-      .select({ id: invoices.id })
-      .from(invoices)
-      .where(eq(invoices.id, sourceId))
-    if (!row) throw new Error('Invoice not found.')
-    return
-  }
-  if (sourceType === 'cash_receipt') {
-    const [row] = await db
-      .select({ id: cashReceipts.id })
-      .from(cashReceipts)
-      .where(eq(cashReceipts.id, sourceId))
-    if (!row) throw new Error('Receipt not found.')
-    return
-  }
-  const [row] = await db
-    .select({ id: mileageEntries.id })
-    .from(mileageEntries)
-    .where(eq(mileageEntries.id, sourceId))
-  if (!row) throw new Error('Mileage entry not found.')
-}
-
-export async function deleteAttachmentsForSource(
-  sourceType: 'invoice' | 'cash_receipt' | 'mileage',
-  sourceId: string,
-) {
-  const { db } = await import('~/db/client')
-  const { attachments } = await import('~/db/schema')
-  const { and, eq } = await import('drizzle-orm')
-  const { deleteObject } = await import('~/lib/storage.server')
-  const rows = await db
-    .select()
-    .from(attachments)
-    .where(
-      and(
-        eq(attachments.sourceType, sourceType),
-        eq(attachments.sourceId, sourceId),
-      ),
-    )
-  for (const row of rows) {
-    await deleteObject(row.storageKey)
-    db.delete(attachments).where(eq(attachments.id, row.id)).run()
-  }
-}
-
-export async function registerAttachment(input: {
-  sourceType: 'invoice' | 'cash_receipt' | 'mileage'
-  sourceId: string
-  storageKey: string
-  fileName: string
-  mimeType: string
-  sizeBytes: number
-}) {
-  const { db } = await import('~/db/client')
-  const { attachments } = await import('~/db/schema')
-  const id = newId('att')
-  db.insert(attachments)
-    .values({
-      id,
-      sourceType: input.sourceType,
-      sourceId: input.sourceId,
-      storageKey: input.storageKey,
-      fileName: input.fileName,
-      mimeType: input.mimeType,
-      sizeBytes: input.sizeBytes,
-    })
-    .run()
-  return id
-}

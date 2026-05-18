@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { useState } from 'react'
 import {
   PageHeader,
   Card,
@@ -7,26 +8,34 @@ import {
   Money,
   Icon,
 } from '~/components/ui'
-import { getMileage, deleteMileage } from '~/server/mileage.functions'
+import {
+  getMileage,
+  deleteMileage,
+  getMileageRateCentsPerMile,
+} from '~/server/mileage.functions'
 import { listAttachments } from '~/server/attachments.functions'
 import { RecordAttachmentsCard } from '~/components/record-attachments-card'
+import { MileageTripForm } from '~/components/mileage-trip-form'
 import { fmtDateLong } from '~/lib/date'
 import { microToDecimal } from '~/lib/money'
+import { ModalDialog } from './services'
 
 export const Route = createFileRoute('/_app/mileage/$id')({
   loader: async ({ params }) => {
-    const [entry, attachments] = await Promise.all([
+    const [entry, attachments, defaultRateCents] = await Promise.all([
       getMileage({ data: { id: params.id } }),
       listAttachments({ data: { sourceType: 'mileage', sourceId: params.id } }),
+      getMileageRateCentsPerMile(),
     ])
-    return { entry, attachments }
+    return { entry, attachments, defaultRateCents }
   },
   component: MileageDetail,
 })
 
 function MileageDetail() {
-  const { entry, attachments } = Route.useLoaderData()
+  const { entry, attachments, defaultRateCents } = Route.useLoaderData()
   const router = useRouter()
+  const [editing, setEditing] = useState(false)
 
   async function del() {
     if (!confirm('Delete this mileage entry?')) return
@@ -46,6 +55,9 @@ function MileageDetail() {
                 <Icon d="M15 18l-6-6 6-6" size={16} /> Back
               </Button>
             </Link>
+            <Button intent="ghost" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
             <Button intent="danger" onClick={del}>
               Delete
             </Button>
@@ -87,6 +99,25 @@ function MileageDetail() {
           items={attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
         />
       </div>
+
+      {editing && (
+        <ModalDialog title="Edit trip" onClose={() => setEditing(false)} deferCloseMs={300}>
+          <MileageTripForm
+            defaultRateCents={defaultRateCents}
+            initial={{
+              id: entry.id,
+              tripDate: entry.tripDate,
+              milesMicro: entry.milesMicro,
+              purpose: entry.purpose,
+            }}
+            onSaved={async () => {
+              setEditing(false)
+              await router.invalidate()
+            }}
+            onCancel={() => setEditing(false)}
+          />
+        </ModalDialog>
+      )}
     </>
   )
 }

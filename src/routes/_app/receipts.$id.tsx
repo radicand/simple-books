@@ -46,6 +46,11 @@ function ReceiptDetail() {
                 <Icon d="M15 18l-6-6 6-6" size={16} /> Back
               </Button>
             </Link>
+            {receipt.invoiceStatus !== 'void' && (
+              <Link to="/receipts/$id/edit" params={{ id: receipt.id }}>
+                <Button intent="ghost">Edit</Button>
+              </Link>
+            )}
             <Button intent="danger" onClick={del}>
               Delete
             </Button>

@@ -8,6 +8,8 @@ import {
   postJournalSync,
   autoCreateInvoiceForPayment,
   nextInvoiceNumber,
+  cascadeAutoInvoiceAmount,
+  recalcInvoiceStatusSync,
   ACCT,
 } from '~/server/posting'
 
@@ -19,6 +21,8 @@ const createSchema = z.object({
   method: z.enum(['cash', 'check', 'card', 'transfer', 'other']),
   memo: z.string().max(500).optional().nullable(),
 })
+
+const updateSchema = createSchema.extend({ id: z.string() })
 
 export const listReceipts = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware]).handler(async () => {
   // auth enforced by requireAuthMiddleware
@@ -58,6 +62,8 @@ export const getReceipt = createServerFn({ method: 'GET' })
         customerName: customers.name,
         invoiceId: cashReceipts.invoiceId,
         invoiceNumber: invoices.number,
+        invoiceStatus: invoices.status,
+        invoiceAutoCreated: invoices.autoCreated,
         amountCents: cashReceipts.amountCents,
         method: cashReceipts.method,
         memo: cashReceipts.memo,
@@ -72,7 +78,12 @@ export const getReceipt = createServerFn({ method: 'GET' })
 
 export const openInvoicesForCustomer = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) =>
-    z.object({ customerId: z.string() }).parse(d),
+    z
+      .object({
+        customerId: z.string(),
+        includeInvoiceId: z.string().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
@@ -93,12 +104,15 @@ export const openInvoicesForCustomer = createServerFn({ method: 'GET' }).middlew
       .where(eq(invoices.customerId, data.customerId))
       .groupBy(invoices.id)
       .orderBy(desc(invoices.issuedOn))
-    return rows
-      .map((r) => ({
-        ...r,
-        balanceCents: r.subtotalCents - Number(r.paidCents ?? 0),
-      }))
-      .filter((r) => r.balanceCents > 0)
+    const mapped = rows.map((r) => ({
+      ...r,
+      balanceCents: r.subtotalCents - Number(r.paidCents ?? 0),
+    }))
+    const open = mapped.filter((r) => r.balanceCents > 0)
+    if (!data.includeInvoiceId) return open
+    const current = mapped.find((r) => r.id === data.includeInvoiceId)
+    if (!current || open.some((r) => r.id === current.id)) return open
+    return [current, ...open]
   })
 
 export const createReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
@@ -177,29 +191,138 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
         ],
       })
 
-      const totalPaid = (
-        tx
-          .select({
-            t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
-          })
-          .from(cashReceipts)
-          .where(eq(cashReceipts.invoiceId, invoiceId!))
-          .all() as any[]
-      )[0]?.t as number
-      const [inv2] = tx
-        .select()
-        .from(invoices)
-        .where(eq(invoices.id, invoiceId!))
-        .all() as any[]
-      if (inv2 && Number(totalPaid) >= inv2.subtotalCents) {
-        tx.update(invoices)
-          .set({ status: 'paid' })
-          .where(eq(invoices.id, invoiceId!))
-          .run()
-      }
+      recalcInvoiceStatusSync(tx, invoiceId!)
     })
 
     return { id: receiptId, autoInvoice: createdInvoice }
+  })
+
+export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
+  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .handler(async ({ data }) => {
+    const { db } = await import('~/db/client')
+    const { cashReceipts, invoices } = await import('~/db/schema')
+    const { eq, sql, and, ne } = await import('drizzle-orm')
+
+    const [r] = await db.select().from(cashReceipts).where(eq(cashReceipts.id, data.id))
+    if (!r) throw new Error('Receipt not found.')
+
+    const [currentInv] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.id, r.invoiceId))
+    if (!currentInv) throw new Error('Invoice not found.')
+    if (currentInv.status === 'void') throw new Error('Cannot edit a payment on a void invoice.')
+
+    const amountCents = parseDollarsToCents(data.amount)
+    if (amountCents <= 0) throw new Error('Amount must be > 0.')
+
+    const targetInvoiceId = data.invoiceId || r.invoiceId
+    if (!targetInvoiceId) throw new Error('Invoice is required.')
+
+    if (currentInv.autoCreated && targetInvoiceId !== r.invoiceId) {
+      throw new Error('Cannot reassign a payment linked to an auto-created invoice.')
+    }
+
+    const receiptCountOnCurrent = (
+      await db
+        .select({ c: sql<number>`COUNT(*)` })
+        .from(cashReceipts)
+        .where(eq(cashReceipts.invoiceId, r.invoiceId))
+    )[0]
+    const shouldCascade =
+      currentInv.autoCreated && Number(receiptCountOnCurrent?.c ?? 0) === 1
+
+    db.transaction((tx) => {
+      postJournalSync(tx, {
+        date: r.receivedOn,
+        memo: `Reverse payment ${r.id}`,
+        source: 'reversal',
+        sourceId: r.id,
+        lines: [
+          { accountCode: ACCT.AR, debitCents: r.amountCents },
+          { accountCode: ACCT.CASH, creditCents: r.amountCents },
+        ],
+      })
+
+      if (shouldCascade) {
+        cascadeAutoInvoiceAmount(tx, {
+          invoiceId: currentInv.id,
+          invoiceNumber: currentInv.number,
+          oldSubtotalCents: currentInv.subtotalCents,
+          issuedOn: data.receivedOn,
+          newSubtotalCents: amountCents,
+        })
+      } else {
+        const [targetInv] = tx
+          .select()
+          .from(invoices)
+          .where(eq(invoices.id, targetInvoiceId))
+          .all() as Array<{
+          id: string
+          customerId: string
+          status: string
+          subtotalCents: number
+        }>
+        if (!targetInv) throw new Error('Invoice not found.')
+        if (targetInv.customerId !== data.customerId) {
+          throw new Error('Invoice belongs to a different customer.')
+        }
+        if (targetInv.status === 'void') throw new Error('Invoice is voided.')
+
+        const paidOthers = (
+          tx
+            .select({
+              t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
+            })
+            .from(cashReceipts)
+            .where(
+              and(
+                eq(cashReceipts.invoiceId, targetInvoiceId),
+                ne(cashReceipts.id, data.id),
+              ),
+            )
+            .all() as Array<{ t: number }>
+        )[0]?.t as number
+        const balanceDue = targetInv.subtotalCents - Number(paidOthers ?? 0)
+        if (balanceDue <= 0 && targetInvoiceId !== r.invoiceId) {
+          throw new Error('Invoice has no balance due.')
+        }
+        if (amountCents > balanceDue) {
+          throw new Error('Payment exceeds invoice balance.')
+        }
+      }
+
+      tx.update(cashReceipts)
+        .set({
+          receivedOn: data.receivedOn,
+          customerId: data.customerId,
+          invoiceId: targetInvoiceId,
+          amountCents,
+          method: data.method,
+          memo: data.memo?.trim() || null,
+        })
+        .where(eq(cashReceipts.id, data.id))
+        .run()
+
+      postJournalSync(tx, {
+        date: data.receivedOn,
+        memo: `Payment received`,
+        source: 'cash_receipt',
+        sourceId: data.id,
+        lines: [
+          { accountCode: ACCT.CASH, debitCents: amountCents },
+          { accountCode: ACCT.AR, creditCents: amountCents },
+        ],
+      })
+
+      recalcInvoiceStatusSync(tx, r.invoiceId)
+      if (targetInvoiceId !== r.invoiceId) {
+        recalcInvoiceStatusSync(tx, targetInvoiceId)
+      }
+    })
+
+    return { id: data.id }
   })
 
 export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
@@ -216,7 +339,7 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
       .where(eq(cashReceipts.id, data.id))
     if (!r) throw new Error('Receipt not found.')
 
-    const { deleteAttachmentsForSource } = await import('~/server/attachments.functions')
+    const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
     await deleteAttachmentsForSource('cash_receipt', data.id)
 
     db.transaction((tx) => {
@@ -231,27 +354,7 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
         ],
       })
       tx.delete(cashReceipts).where(eq(cashReceipts.id, data.id)).run()
-
-      const [inv] = tx
-        .select()
-        .from(invoices)
-        .where(eq(invoices.id, r.invoiceId))
-        .all() as Array<{ subtotalCents: number }>
-      const totalPaid = (
-        tx
-          .select({
-            t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
-          })
-          .from(cashReceipts)
-          .where(eq(cashReceipts.invoiceId, r.invoiceId))
-          .all() as Array<{ t: number }>
-      )[0]?.t as number
-      const status =
-        inv && Number(totalPaid ?? 0) >= inv.subtotalCents ? 'paid' : 'open'
-      tx.update(invoices)
-        .set({ status })
-        .where(eq(invoices.id, r.invoiceId))
-        .run()
+      recalcInvoiceStatusSync(tx, r.invoiceId)
     })
     return { ok: true }
   })

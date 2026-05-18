@@ -125,7 +125,7 @@ export const deleteMileage = createServerFn({ method: 'POST' })
       .from(mileageEntries)
       .where(eq(mileageEntries.id, data.id))
     if (!m) throw new Error('Mileage entry not found.')
-    const { deleteAttachmentsForSource } = await import('~/server/attachments.functions')
+    const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
     await deleteAttachmentsForSource('mileage', data.id)
     db.transaction((tx) => {
       postJournalSync(tx, {
@@ -141,4 +141,65 @@ export const deleteMileage = createServerFn({ method: 'POST' })
       tx.delete(mileageEntries).where(eq(mileageEntries.id, data.id)).run()
     })
     return { ok: true }
+  })
+
+export const updateMileage = createServerFn({ method: 'POST' })
+  .middleware([requireAuthMiddleware])
+  .inputValidator((d: unknown) => createSchema.extend({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { db } = await import('~/db/client')
+    const { mileageEntries } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
+
+    const [m] = await db
+      .select()
+      .from(mileageEntries)
+      .where(eq(mileageEntries.id, data.id))
+    if (!m) throw new Error('Mileage entry not found.')
+
+    const milesMicro = parseQuantityToMicro(data.miles)
+    if (milesMicro <= 0) throw new Error('Miles must be > 0.')
+    const rateMicroPerMile = await resolveRateMicroPerMile(data.tripDate)
+    const product = BigInt(milesMicro) * BigInt(rateMicroPerMile)
+    const half = 5_000_000_000n
+    const amountCents = Number(
+      product >= 0n
+        ? (product + half) / 10_000_000_000n
+        : -((-product + half) / 10_000_000_000n),
+    )
+    if (amountCents <= 0) throw new Error('Computed mileage amount is zero.')
+
+    db.transaction((tx) => {
+      postJournalSync(tx, {
+        date: m.tripDate,
+        memo: `Reverse mileage ${m.id}`,
+        source: 'reversal',
+        sourceId: m.id,
+        lines: [
+          { accountCode: ACCT.OWNERS_CONTRIBUTION, debitCents: m.amountCents },
+          { accountCode: ACCT.VEHICLE_EXPENSE, creditCents: m.amountCents },
+        ],
+      })
+      tx.update(mileageEntries)
+        .set({
+          tripDate: data.tripDate,
+          milesMicro,
+          rateMicroPerMile,
+          purpose: data.purpose.trim(),
+          amountCents,
+        })
+        .where(eq(mileageEntries.id, data.id))
+        .run()
+      postJournalSync(tx, {
+        date: data.tripDate,
+        memo: `Mileage: ${data.purpose.trim()}`,
+        source: 'mileage',
+        sourceId: data.id,
+        lines: [
+          { accountCode: ACCT.VEHICLE_EXPENSE, debitCents: amountCents },
+          { accountCode: ACCT.OWNERS_CONTRIBUTION, creditCents: amountCents },
+        ],
+      })
+    })
+    return { id: data.id, amountCents }
   })

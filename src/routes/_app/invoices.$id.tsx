@@ -78,6 +78,11 @@ function InvoiceDetail() {
                 </Button>
               </Link>
             )}
+            {inv.status === 'open' && inv.receipts.length === 0 && (
+              <Link to="/invoices/$id/edit" params={{ id: inv.id }}>
+                <Button intent="ghost">Edit</Button>
+              </Link>
+            )}
             {inv.status !== 'void' && inv.receipts.length === 0 && (
               <Button intent="danger" onClick={doVoid}>
                 Void

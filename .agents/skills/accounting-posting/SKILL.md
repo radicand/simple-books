@@ -50,6 +50,16 @@ Reverse a receipt:    DR 1100 A/R                 CR 1000 Cash    (reversal)
 5. Update related invoice status if settled.
 6. If undoable, implement a reversal endpoint (debits/credits swapped) — never edit a posted journal entry.
 
+## Editing a business record
+
+Never update `journal_entries` / `journal_lines` in place. In one `db.transaction`:
+
+1. `postJournalSync` with `source: 'reversal'` and debits/credits **swapped** from the original entry (`reverseInvoiceJournal`, or mirror `deleteReceipt` / `deleteMileage`).
+2. Update the business row (`invoices`, `cash_receipts`, `mileage_entries`, …).
+3. `postJournalSync` with the original `source` and corrected amounts.
+
+Helpers in `src/server/posting.ts`: `reverseInvoiceJournal`, `postInvoiceJournal`, `cascadeAutoInvoiceAmount` (when a stand-alone payment’s auto-invoice must stay in sync), `recalcInvoiceStatusSync`.
+
 ## Money + quantities
 
 - Money: integer cents. Use `parseDollarsToCents` and `fmtCents`.

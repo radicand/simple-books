@@ -72,6 +72,15 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await expect(page.getByText(/invoice 2026-/i)).toBeVisible()
   await expect(visibleText(page, '$300.00').first()).toBeVisible()
 
+  // ---- Edit invoice (open, no payments) ----
+  const invoiceId = page.url().split('/invoices/')[1]!.split(/[/?#]/)[0]!
+  await page.goto(`${BASE}/invoices/${invoiceId}/edit`)
+  await expect(page.getByRole('heading', { name: /edit invoice/i })).toBeVisible()
+  await page.getByLabel('Memo').fill('Phase 1')
+  await page.getByRole('button', { name: /save changes/i }).click()
+  await page.waitForURL(new RegExp(`/invoices/${invoiceId}$`))
+  await expect(page.getByText('Phase 1')).toBeVisible()
+
   // ---- Log a payment for that invoice ----
   await page.getByRole('link', { name: /log payment/i }).click()
   await page.waitForURL(/\/receipts\/new/)
