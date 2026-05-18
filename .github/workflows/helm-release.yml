@@ -18,6 +18,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           sed -i "s/^version:.*/version: ${VERSION}/" deploy/helm/simple-books/Chart.yaml
           sed -i "s/^appVersion:.*/appVersion: \"${VERSION}\"/" deploy/helm/simple-books/Chart.yaml
+          helm dependency update deploy/helm/simple-books
           helm package deploy/helm/simple-books -d dist
 
       - name: Upload chart to release

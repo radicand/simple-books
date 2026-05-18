@@ -9,6 +9,7 @@ const result = spawnSync('bunx', ['playwright', 'test', ...process.argv.slice(2)
   stdio: 'inherit',
   env: {
     ...process.env,
+    NODE_ENV: 'development',
     PLAYWRIGHT_PORT: String(port),
   },
 })

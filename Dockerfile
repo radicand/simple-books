@@ -30,6 +30,7 @@ COPY --from=build --chown=app:app /app/.output ./.output
 COPY --from=build --chown=app:app /app/drizzle ./drizzle
 COPY --from=build --chown=app:app /app/drizzle/pg ./drizzle/pg
 COPY --from=build --chown=app:app /app/scripts/migrate.ts ./scripts/migrate.ts
+COPY --from=build --chown=app:app /app/src/db/dialect.ts ./src/db/dialect.ts
 COPY --chown=app:app docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
   && mkdir -p /app/data \

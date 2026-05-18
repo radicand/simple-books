@@ -93,6 +93,13 @@ async function assertBootstrapUserSlot(): Promise<void> {
   }
 }
 
+/** Runtime HTTPS check — avoid NODE_ENV (Vite inlines it at build time). */
+function isHttpsDeployment(): boolean {
+  return (process.env.BETTER_AUTH_URL ?? 'http://localhost:3000').startsWith(
+    'https://',
+  )
+}
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET,
@@ -122,10 +129,10 @@ export const auth = betterAuth({
   },
   plugins,
   advanced: {
-    useSecureCookies: process.env.NODE_ENV === 'production',
+    useSecureCookies: isHttpsDeployment(),
   },
   rateLimit: {
-    enabled: process.env.NODE_ENV === 'production',
+    enabled: isHttpsDeployment(),
     window: 60,
     max: 100,
     customRules: {

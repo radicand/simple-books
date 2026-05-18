@@ -38,6 +38,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
+      NODE_ENV: 'development',
       PLAYWRIGHT_PORT: String(port),
       BETTER_AUTH_SECRET: authSecret,
     },
