@@ -44,7 +44,7 @@ for the engineering recipe.
 | Styling | **Tailwind v4** with a custom OKLCH theme |
 | DB | **SQLite** (local dev) or **PostgreSQL** (production) via **Drizzle ORM** |
 | Auth | **Better Auth** — email/password + generic OIDC plugin |
-| E2E | **Playwright** (a single smoke test) |
+| E2E | **Playwright** (`bun run build:e2e && bun run test`) |
 
 No Next.js. No Node. No React server components. ESM only.
 
@@ -116,13 +116,13 @@ bun run start      # -> bun run .output/server/index.mjs
 ## Smoke test
 
 ```bash
-bun run db:reset
-bun run dev &      # keep running
-bunx playwright test --project=chromium
+bun run build:e2e   # production build with frozen REFERENCE_DATE
+bun run test        # prod server + ephemeral SQLite DB
 ```
 
-The test walks the entire flow and (re)generates the screenshots in
-`docs/screens/`.
+The test walks the entire sole-proprietor flow. To refresh committed README images in
+`docs/screens/`, run `bun run screenshots`.
+Normal `bun run test` does not touch those files.
 
 ## Documentation
 

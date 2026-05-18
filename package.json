@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun --bun vite dev --port 3000",
-    "build": "bun --bun vite build",
+    "build": "NODE_ENV=production bun --bun vite build",
+    "build:e2e": "REFERENCE_DATE=2026-05-18 bun run build",
     "start": "bun run .output/server/index.mjs",
     "db:generate": "bunx drizzle-kit generate --config=drizzle.config.sqlite.ts",
     "db:generate:pg": "bunx drizzle-kit generate --config=drizzle.config.pg.ts",
@@ -14,6 +15,7 @@
     "db:reset": "rm -rf data/simple-books.db data/simple-books.db-shm data/simple-books.db-wal && bun run db:migrate && bun run db:seed",
     "auth:secret": "bun -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
     "test": "bun run scripts/playwright-test.ts",
+    "screenshots": "UPDATE_SCREENSHOTS=1 bun run test -- --grep @screenshots",
     "test:e2e": "bash scripts/e2e.sh",
     "test:e2e:quick": "bash scripts/e2e.sh --skip-build",
     "design:lint": "npx @google/design.md lint DESIGN.md"

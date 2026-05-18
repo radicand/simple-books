@@ -1,33 +1,32 @@
 /**
- * Playwright webServer entrypoint: fresh temp SQLite DB, migrate/seed, then app server.
+ * Playwright webServer entrypoint: fresh temp SQLite DB, migrate/seed, production server.
  * Temp directory is removed when this process exits (including SIGTERM from Playwright).
  *
- * CI runs `bun run build` first — use the production server so auth cookies and SSR match
- * the built bundle. Local runs without a build use Vite dev (and clear stale artifacts).
+ * Requires a production build with REFERENCE_DATE baked in (see `bun run build:e2e`).
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { E2E_REFERENCE_DATE } from '../tests/reference-date.ts'
 
 const cwd = process.cwd()
 const prodEntry = join(cwd, '.output/server/index.mjs')
-const useProd =
-  process.env.PLAYWRIGHT_USE_PROD === '1' ||
-  (process.env.CI === 'true' && existsSync(prodEntry))
+const useProd = process.env.PLAYWRIGHT_USE_PROD === '1'
 
-function clearDevArtifacts() {
-  for (const dir of [
-    join(cwd, '.output'),
-    join(cwd, 'node_modules/.nitro'),
-    join(cwd, '.vite'),
-    join(cwd, '.tanstack'),
-  ]) {
-    if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
-  }
+if (!useProd) {
+  console.error(
+    'PLAYWRIGHT_USE_PROD=1 is required. Run tests via `bun run test` (not playwright test directly).',
+  )
+  process.exit(1)
 }
 
-if (!useProd) clearDevArtifacts()
+if (!existsSync(prodEntry)) {
+  console.error(
+    'Missing production build (.output/server/index.mjs). Run: bun run build:e2e',
+  )
+  process.exit(1)
+}
 
 const port = process.env.PLAYWRIGHT_PORT
 if (!port) {
@@ -48,13 +47,14 @@ function cleanup() {
 
 const env: NodeJS.ProcessEnv = {
   ...process.env,
-  NODE_ENV: useProd ? 'production' : 'development',
+  NODE_ENV: 'production',
   PORT: port,
   DATABASE_URL: dbPath,
   BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ??
     'playwright-e2e-secret-at-least-32-characters',
+  REFERENCE_DATE: E2E_REFERENCE_DATE,
 }
 
 for (const script of ['scripts/migrate.ts', 'scripts/seed.ts']) {
@@ -65,12 +65,7 @@ for (const script of ['scripts/migrate.ts', 'scripts/seed.ts']) {
   }
 }
 
-const server = useProd
-  ? spawn('bun', ['run', prodEntry], { env, stdio: 'inherit' })
-  : spawn('bun', ['--bun', 'vite', 'dev', '--port', port, '--host', '127.0.0.1'], {
-      env,
-      stdio: 'inherit',
-    })
+const server = spawn('bun', [prodEntry], { env, stdio: 'inherit' })
 
 let shuttingDown = false
 function shutdown(signal: NodeJS.Signals) {

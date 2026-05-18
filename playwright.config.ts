@@ -17,12 +17,14 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,
+  workers: 1,
   retries: 0,
+  grepInvert: /@screenshots/,
   reporter: 'list',
   use: {
     baseURL,
     actionTimeout: 5_000,
-    navigationTimeout: 10_000,
+    navigationTimeout: 15_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -39,6 +41,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       PLAYWRIGHT_PORT: String(port),
+      PLAYWRIGHT_USE_PROD: process.env.PLAYWRIGHT_USE_PROD ?? '1',
       BETTER_AUTH_SECRET: authSecret,
     },
   },

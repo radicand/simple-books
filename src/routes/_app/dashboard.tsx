@@ -8,7 +8,7 @@ import {
   Button,
   Icon,
 } from '~/components/ui'
-import { fmtDate, fmtDateLong, todayISO } from '~/lib/date'
+import { fmtDate, fmtDateLong, referenceNow, todayISO } from '~/lib/date'
 import { getDashboard } from '~/server/dashboard.functions'
 
 export const Route = createFileRoute('/_app/dashboard')({
@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_app/dashboard')({
 
 function Dashboard() {
   const data = Route.useLoaderData()
-  const greeting = greetingFor(new Date())
+  const greeting = greetingFor(referenceNow())
 
   return (
     <>
