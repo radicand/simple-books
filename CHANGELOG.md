@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.7](https://github.com/radicand/simple-books/compare/v0.1.6...v0.1.7) (2026-05-18)
+
+
+### Features
+
+* dark mode ([6a1b020](https://github.com/radicand/simple-books/commit/6a1b02047011f5a4bebb45bfe9751d76594f2a3f))
+* edit invoices ([7ee2fb2](https://github.com/radicand/simple-books/commit/7ee2fb210956b3b13dd5efcc6dd5dfb9e78bce8e))
+* pg database option ([6a1b020](https://github.com/radicand/simple-books/commit/6a1b02047011f5a4bebb45bfe9751d76594f2a3f))
+
+
+### Bug Fixes
+
+* editing auto-created invoices ([6a1b020](https://github.com/radicand/simple-books/commit/6a1b02047011f5a4bebb45bfe9751d76594f2a3f))
+* oidc login name display ([6a1b020](https://github.com/radicand/simple-books/commit/6a1b02047011f5a4bebb45bfe9751d76594f2a3f))
+
 ## [0.1.6](https://github.com/radicand/simple-books/compare/v0.1.5...v0.1.6) (2026-05-18)
 
 
