@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  redirect,
-  useNavigate,
-  useRouter,
-} from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { authClient } from '~/lib/auth-client'
 import { getSession, getAuthConfig } from '~/lib/auth.functions'
@@ -28,8 +23,6 @@ function formatOAuthCallbackError(raw: string): string {
 function LoginPage() {
   const cfg = Route.useLoaderData()
   const { error: callbackError } = Route.useSearch()
-  const router = useRouter()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
@@ -65,8 +58,9 @@ function LoginPage() {
         })
         if (res.error) throw new Error(res.error.message ?? 'Sign-in failed.')
       }
-      await router.invalidate()
-      navigate({ to: '/dashboard' })
+      // Full navigation so the next SSR request includes the session cookie.
+      // Client-side navigate() can race getSession() in _app beforeLoad.
+      window.location.assign('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

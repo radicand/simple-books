@@ -1,18 +1,33 @@
 /**
- * Playwright webServer entrypoint: fresh temp SQLite DB, migrate/seed, then Vite dev.
+ * Playwright webServer entrypoint: fresh temp SQLite DB, migrate/seed, then app server.
  * Temp directory is removed when this process exits (including SIGTERM from Playwright).
+ *
+ * CI runs `bun run build` first — use the production server so auth cookies and SSR match
+ * the built bundle. Local runs without a build use Vite dev (and clear stale artifacts).
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-// CI runs `bun run build` before smoke tests. Stale `.output` makes `vite dev` serve
-// production SSR bundles where auth cookies/session handling no longer match dev HTTP.
-const outputDir = join(process.cwd(), '.output')
-if (existsSync(outputDir)) {
-  rmSync(outputDir, { recursive: true, force: true })
+const cwd = process.cwd()
+const prodEntry = join(cwd, '.output/server/index.mjs')
+const useProd =
+  process.env.PLAYWRIGHT_USE_PROD === '1' ||
+  (process.env.CI === 'true' && existsSync(prodEntry))
+
+function clearDevArtifacts() {
+  for (const dir of [
+    join(cwd, '.output'),
+    join(cwd, 'node_modules/.nitro'),
+    join(cwd, '.vite'),
+    join(cwd, '.tanstack'),
+  ]) {
+    if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
+  }
 }
+
+if (!useProd) clearDevArtifacts()
 
 const port = process.env.PLAYWRIGHT_PORT
 if (!port) {
@@ -33,7 +48,8 @@ function cleanup() {
 
 const env: NodeJS.ProcessEnv = {
   ...process.env,
-  NODE_ENV: 'development',
+  NODE_ENV: useProd ? 'production' : 'development',
+  PORT: port,
   DATABASE_URL: dbPath,
   BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
   BETTER_AUTH_SECRET:
@@ -49,22 +65,24 @@ for (const script of ['scripts/migrate.ts', 'scripts/seed.ts']) {
   }
 }
 
-const dev = spawn('bun', ['--bun', 'vite', 'dev', '--port', port, '--host', '127.0.0.1'], {
-  env,
-  stdio: 'inherit',
-})
+const server = useProd
+  ? spawn('bun', ['run', prodEntry], { env, stdio: 'inherit' })
+  : spawn('bun', ['--bun', 'vite', 'dev', '--port', port, '--host', '127.0.0.1'], {
+      env,
+      stdio: 'inherit',
+    })
 
 let shuttingDown = false
 function shutdown(signal: NodeJS.Signals) {
   if (shuttingDown) return
   shuttingDown = true
-  dev.kill(signal)
+  server.kill(signal)
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'))
 process.on('SIGTERM', () => shutdown('SIGTERM'))
 
-dev.on('exit', (code, signal) => {
+server.on('exit', (code, signal) => {
   cleanup()
   if (signal === 'SIGTERM' || signal === 'SIGINT') {
     process.exit(0)
