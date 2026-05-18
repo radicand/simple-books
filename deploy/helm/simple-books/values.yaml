@@ -95,7 +95,7 @@ postgresql:
   enabled: false
   auth:
     username: simplebooks
-    password: "" # required when enabled; use a strong value or existingSecret via Bitnami chart
+    password: "" # optional; Bitnami auto-generates and stores in the subchart Secret when empty
     database: simplebooks
   primary:
     persistence:
@@ -105,6 +105,9 @@ postgresql:
 # External/managed Postgres (RDS, Cloud SQL, etc.). Takes precedence over postgresql.enabled.
 database:
   externalUrl: ""
+  # Full postgresql:// URL in an existing Secret (preferred over externalUrl in production).
+  existingSecretName: ""
+  existingSecretKey: DATABASE_URL
 
 # Non-secret environment variables (see secretEnv for sensitive values).
 env:

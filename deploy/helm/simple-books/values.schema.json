@@ -141,7 +141,15 @@
       "properties": {
         "externalUrl": {
           "type": "string",
-          "description": "postgresql:// URL for external/managed Postgres (overrides subchart)."
+          "description": "postgresql:// URL for external/managed Postgres (prefer existingSecretName in production)."
+        },
+        "existingSecretName": {
+          "type": "string",
+          "description": "Existing Secret containing DATABASE_URL (e.g. from External Secrets Operator)."
+        },
+        "existingSecretKey": {
+          "type": "string",
+          "description": "Key in existingSecretName; defaults to DATABASE_URL."
         }
       }
     },

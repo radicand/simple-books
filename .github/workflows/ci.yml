@@ -74,12 +74,16 @@ jobs:
             > /dev/null
           helm template test-pg deploy/helm/simple-books \
             --set postgresql.enabled=true \
-            --set postgresql.auth.password=ci-test \
             --set secretEnv.BETTER_AUTH_SECRET=ci \
             --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
             > /dev/null
           helm template test-pg-ext deploy/helm/simple-books \
             --set database.externalUrl=postgresql://u:p@db.example:5432/simplebooks \
+            --set secretEnv.BETTER_AUTH_SECRET=ci \
+            --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
+            > /dev/null
+          helm template test-pg-secret deploy/helm/simple-books \
+            --set database.existingSecretName=db-credentials \
             --set secretEnv.BETTER_AUTH_SECRET=ci \
             --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
             > /dev/null

@@ -47,19 +47,57 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{/*
-  DATABASE_URL for the app container.
-  Priority: database.externalUrl > bundled PostgreSQL subchart > SQLite path in values.env
+  True when DATABASE_URL is supplied outside values.env (Postgres modes).
 */}}
-{{- define "simple-books.databaseUrl" -}}
-{{- if .Values.database.externalUrl -}}
-{{- .Values.database.externalUrl -}}
-{{- else if .Values.postgresql.enabled -}}
-{{- $user := .Values.postgresql.auth.username | urlquery -}}
-{{- $pass := .Values.postgresql.auth.password | urlquery -}}
-{{- $db := .Values.postgresql.auth.database | urlquery -}}
-{{- $host := printf "%s-postgresql" .Release.Name -}}
-postgresql://{{ $user }}:{{ $pass }}@{{ $host }}:5432/{{ $db }}
+{{- define "simple-books.databaseConfigured" -}}
+{{- or .Values.database.existingSecretName .Values.database.externalUrl .Values.postgresql.enabled -}}
+{{- end -}}
+
+{{/*
+  Bitnami PostgreSQL Secret name (chart-created or auth.existingSecret).
+*/}}
+{{- define "simple-books.postgresql.secretName" -}}
+{{- if .Values.postgresql.auth.existingSecret -}}
+{{- .Values.postgresql.auth.existingSecret -}}
+{{- else if .Values.postgresql.fullnameOverride -}}
+{{- .Values.postgresql.fullnameOverride -}}
 {{- else -}}
-{{- .Values.env.DATABASE_URL | default "/app/data/simple-books.db" -}}
+{{- printf "%s-postgresql" .Release.Name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "simple-books.postgresql.host" -}}
+{{- include "simple-books.postgresql.secretName" . -}}
+{{- end -}}
+
+{{- define "simple-books.postgresql.userPasswordKey" -}}
+{{- if .Values.postgresql.auth.secretKeys -}}
+{{- .Values.postgresql.auth.secretKeys.userPasswordKey | default "password" -}}
+{{- else -}}
+password
+{{- end -}}
+{{- end -}}
+
+{{/*
+  DATABASE_URL env entries. Priority: database.existingSecretName > database.externalUrl > bundled Postgres.
+*/}}
+{{- define "simple-books.databaseEnv" -}}
+{{- if .Values.database.existingSecretName -}}
+- name: DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.database.existingSecretName }}
+      key: {{ .Values.database.existingSecretKey | default "DATABASE_URL" }}
+{{- else if .Values.database.externalUrl -}}
+- name: DATABASE_URL
+  value: {{ .Values.database.externalUrl | quote }}
+{{- else if .Values.postgresql.enabled -}}
+- name: POSTGRES_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "simple-books.postgresql.secretName" . }}
+      key: {{ include "simple-books.postgresql.userPasswordKey" . }}
+- name: DATABASE_URL
+  value: {{ printf "postgresql://%s:$(POSTGRES_PASSWORD)@%s:5432/%s" (.Values.postgresql.auth.username | default "simplebooks") (include "simple-books.postgresql.host" .) (.Values.postgresql.auth.database | default "simplebooks") | quote }}
 {{- end -}}
 {{- end -}}
