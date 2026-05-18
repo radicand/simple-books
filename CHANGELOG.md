@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/radicand/simple-books/compare/v0.1.5...v0.1.6) (2026-05-18)
+
+
+### Features
+
+* edit supported now ([c59b73d](https://github.com/radicand/simple-books/commit/c59b73dcc88435cc7b36ba3cfc7b6e52be53f581))
+
+
+### Bug Fixes
+
+* server import issue ([c59b73d](https://github.com/radicand/simple-books/commit/c59b73dcc88435cc7b36ba3cfc7b6e52be53f581))
+
 ## [0.1.5](https://github.com/radicand/simple-books/compare/v0.1.4...v0.1.5) (2026-05-18)
 
 
