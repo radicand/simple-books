@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import {
   PageHeader,
@@ -32,7 +32,7 @@ import { FormGrid } from '~/components/form-grid'
 import { PendingFileField } from '~/components/pending-file-field'
 import { uploadPendingAttachment } from '~/components/attachment-upload'
 
-export const Route = createFileRoute('/_app/mileage')({
+export const Route = createFileRoute('/_app/mileage/')({
   loader: async () => ({
     entries: await listMileage(),
     defaultRateCents: await getMileageRateCentsPerMile(),
@@ -43,6 +43,7 @@ export const Route = createFileRoute('/_app/mileage')({
 function MileagePage() {
   const { entries, defaultRateCents } = Route.useLoaderData()
   const router = useRouter()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
 
   async function del(id: string) {
@@ -79,7 +80,7 @@ function MileagePage() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardBody className="!p-4">
             <div className="text-[11px] uppercase tracking-wider text-[var(--color-ink-faint)] font-medium">
@@ -98,7 +99,7 @@ function MileagePage() {
             </div>
           </CardBody>
         </Card>
-        <Card>
+        <Card className="col-span-2 sm:col-span-1">
           <CardBody className="!p-4">
             <div className="text-[11px] uppercase tracking-wider text-[var(--color-ink-faint)] font-medium">
               Total deduction
@@ -121,7 +122,19 @@ function MileagePage() {
           <>
           <div className="sm:hidden divide-y divide-[var(--color-border)]">
             {entries.map((e) => (
-              <div key={e.id} className="px-4 py-4 flex flex-col gap-2">
+              <div
+                key={e.id}
+                role="button"
+                tabIndex={0}
+                className="px-4 py-4 flex flex-col gap-2 cursor-pointer hover:bg-[var(--color-surface-2)]"
+                onClick={() => navigate({ to: '/mileage/$id', params: { id: e.id } })}
+                onKeyDown={(ev) => {
+                  if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault()
+                    navigate({ to: '/mileage/$id', params: { id: e.id } })
+                  }
+                }}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-medium">{e.purpose}</div>
@@ -136,7 +149,10 @@ function MileagePage() {
                     ${(e.rateMicroPerMile / 1_000_000).toFixed(2)}/mi
                   </span>
                   <button
-                    onClick={() => del(e.id)}
+                    onClick={(ev) => {
+                      ev.stopPropagation()
+                      void del(e.id)
+                    }}
                     className="text-[var(--color-ink-faint)] hover:text-[var(--color-negative)] p-2 min-h-11 min-w-11 flex items-center justify-center"
                     aria-label="Delete trip"
                   >
@@ -160,7 +176,11 @@ function MileagePage() {
             </THead>
             <tbody>
               {entries.map((e) => (
-                <Tr key={e.id}>
+                <Tr
+                  key={e.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate({ to: '/mileage/$id', params: { id: e.id } })}
+                >
                   <Td className="text-[var(--color-ink-soft)]">{fmtDate(e.tripDate)}</Td>
                   <Td>{e.purpose}</Td>
                   <Td className="text-right tabular">{microToDecimal(e.milesMicro, 1)}</Td>
@@ -172,7 +192,10 @@ function MileagePage() {
                   </Td>
                   <Td className="text-right">
                     <button
-                      onClick={() => del(e.id)}
+                      onClick={(ev) => {
+                        ev.stopPropagation()
+                        void del(e.id)
+                      }}
                       className="text-[var(--color-ink-faint)] hover:text-[var(--color-negative)] p-1"
                       aria-label="Delete trip"
                     >

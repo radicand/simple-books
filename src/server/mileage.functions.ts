@@ -52,6 +52,21 @@ export const listMileage = createServerFn({ method: 'GET' })
     return db.select().from(mileageEntries).orderBy(desc(mileageEntries.tripDate))
   })
 
+export const getMileage = createServerFn({ method: 'GET' })
+  .middleware([requireAuthMiddleware])
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { db } = await import('~/db/client')
+    const { mileageEntries } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
+    const [row] = await db
+      .select()
+      .from(mileageEntries)
+      .where(eq(mileageEntries.id, data.id))
+    if (!row) throw new Error('Mileage entry not found.')
+    return row
+  })
+
 export const createMileage = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) => createSchema.parse(d))

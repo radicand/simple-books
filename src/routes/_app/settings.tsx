@@ -33,6 +33,8 @@ function SettingsPage() {
   const router = useRouter()
   const currentYear = new Date().getFullYear()
   const hasCurrentYear = rates.some((r) => r.taxYear === currentYear)
+  const [addingYear, setAddingYear] = useState(false)
+  const existingYears = new Set(rates.map((r) => r.taxYear))
 
   return (
     <>
@@ -67,15 +69,22 @@ function SettingsPage() {
             IRS publishes standard business rates each year. Set the rate you use per calendar year.
             Each trip stores the rate in effect when you log it.
           </p>
-          <a
-            href="https://www.irs.gov/newsroom"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-[13px] text-[var(--color-brand)] hover:underline"
-          >
-            IRS announcements
-            <Icon d="M7 17L17 7M17 7H9M17 7V15" size={14} />
-          </a>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <a
+              href="https://www.irs.gov/newsroom"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[13px] text-[var(--color-brand)] hover:underline"
+            >
+              IRS announcements
+              <Icon d="M7 17L17 7M17 7H9M17 7V15" size={14} />
+            </a>
+            {!addingYear && (
+              <Button size="sm" intent="neutral" onClick={() => setAddingYear(true)}>
+                <Icon d="M12 4v16M4 12h16" size={14} /> Add tax year
+              </Button>
+            )}
+          </div>
         </CardBody>
 
         <Table>
@@ -103,10 +112,100 @@ function SettingsPage() {
                 isNew
               />
             )}
+            {addingYear && (
+              <AddRateRow
+                defaultYear={
+                  [...Array.from({ length: 10 }, (_, i) => currentYear + i)].find(
+                    (y) => !existingYears.has(y),
+                  ) ?? currentYear + 1
+                }
+                existingYears={existingYears}
+                onSaved={() => {
+                  setAddingYear(false)
+                  router.invalidate()
+                }}
+                onCancel={() => setAddingYear(false)}
+              />
+            )}
           </tbody>
         </Table>
       </Card>
     </>
+  )
+}
+
+function AddRateRow({
+  defaultYear,
+  existingYears,
+  onSaved,
+  onCancel,
+}: {
+  defaultYear: number
+  existingYears: Set<number>
+  onSaved: () => void
+  onCancel: () => void
+}) {
+  const [taxYear, setTaxYear] = useState(String(defaultYear))
+  const [value, setValue] = useState('72.5')
+  const [busy, setBusy] = useState(false)
+
+  async function save() {
+    setBusy(true)
+    try {
+      const year = Number(taxYear)
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+        throw new Error('Enter a valid tax year (2000–2100).')
+      }
+      if (existingYears.has(year)) {
+        throw new Error(`Rate for ${year} already exists. Edit that row instead.`)
+      }
+      const cents = Number(value)
+      if (!Number.isFinite(cents) || cents < 0 || cents > 500) {
+        throw new Error('Enter a valid rate in cents per mile (e.g. 72.5).')
+      }
+      await upsertMileageRate({ data: { taxYear: year, centsPerMile: cents } })
+      onSaved()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Tr>
+      <Td>
+        <Input
+          type="number"
+          min={2000}
+          max={2100}
+          className="tabular w-[100px]"
+          value={taxYear}
+          onChange={(e) => setTaxYear(e.target.value)}
+        />
+      </Td>
+      <Td className="text-right">
+        <Input
+          type="number"
+          step="0.1"
+          min={0}
+          max={500}
+          className="tabular w-[100px] ml-auto"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+      </Td>
+      <Td className="text-right">
+        <span className="inline-flex gap-1">
+          <Button size="sm" intent="brand" disabled={busy} onClick={save}>
+            Save
+          </Button>
+          <Button size="sm" intent="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+        </span>
+      </Td>
+    </Tr>
   )
 }
 

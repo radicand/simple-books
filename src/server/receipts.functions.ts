@@ -43,6 +43,33 @@ export const listReceipts = createServerFn({ method: 'GET' }).middleware([requir
     .orderBy(desc(cashReceipts.receivedOn), desc(cashReceipts.createdAt))
 })
 
+export const getReceipt = createServerFn({ method: 'GET' })
+  .middleware([requireAuthMiddleware])
+  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { db } = await import('~/db/client')
+    const { cashReceipts, customers, invoices } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
+    const [row] = await db
+      .select({
+        id: cashReceipts.id,
+        receivedOn: cashReceipts.receivedOn,
+        customerId: cashReceipts.customerId,
+        customerName: customers.name,
+        invoiceId: cashReceipts.invoiceId,
+        invoiceNumber: invoices.number,
+        amountCents: cashReceipts.amountCents,
+        method: cashReceipts.method,
+        memo: cashReceipts.memo,
+      })
+      .from(cashReceipts)
+      .leftJoin(customers, eq(cashReceipts.customerId, customers.id))
+      .leftJoin(invoices, eq(cashReceipts.invoiceId, invoices.id))
+      .where(eq(cashReceipts.id, data.id))
+    if (!row) throw new Error('Receipt not found.')
+    return row
+  })
+
 export const openInvoicesForCustomer = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
   .inputValidator((d: unknown) =>
     z.object({ customerId: z.string() }).parse(d),

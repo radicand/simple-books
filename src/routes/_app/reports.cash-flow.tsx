@@ -51,15 +51,15 @@ function CashFlowPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardBody className="!py-3 flex items-end justify-between gap-3">
-          <div className="flex items-end gap-3">
+        <CardBody className="!py-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
             <Field label="From" htmlFor="cf-from">
               <Input
                 id="cf-from"
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="w-[180px]"
+                className="w-full sm:w-[180px]"
               />
             </Field>
             <Field label="To" htmlFor="cf-to">
@@ -68,11 +68,11 @@ function CashFlowPage() {
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="w-[180px]"
+                className="w-full sm:w-[180px]"
               />
             </Field>
           </div>
-          <Button intent="neutral" onClick={reload} disabled={busy}>
+          <Button intent="neutral" onClick={reload} disabled={busy} className="w-full sm:w-auto">
             <Icon d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" size={16} />
             {busy ? 'Loading…' : 'Refresh'}
           </Button>
@@ -84,13 +84,13 @@ function CashFlowPage() {
           <div className="text-[11px] uppercase tracking-wider text-[var(--color-ink-faint)] font-medium mb-1">
             Cash Flow
           </div>
-          <div className="text-[20px] font-semibold tracking-tight">
+          <div className="text-[17px] sm:text-[20px] font-semibold tracking-tight">
             {fmtDateLong(data.from)} → {fmtDateLong(data.to)}
           </div>
         </div>
 
         <CardBody className="!p-0">
-          <div className="grid grid-cols-1 sm:grid-cols-4 divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
+          <div className="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
             <Stat label="Opening cash" cents={data.opening} />
             <Stat label="Inflows" cents={data.totalIn} tone="positive" />
             <Stat label="Outflows" cents={-data.totalOut} tone="negative" />
@@ -105,42 +105,73 @@ function CashFlowPage() {
               No payments received in this period.
             </div>
           ) : (
-            <Table>
-              <THead>
-                <tr>
-                  <Th>Date</Th>
-                  <Th>Customer</Th>
-                  <Th>Method</Th>
-                  <Th>Memo</Th>
-                  <Th className="text-right">Amount</Th>
-                </tr>
-              </THead>
-              <tbody>
+            <>
+              <div className="sm:hidden divide-y divide-[var(--color-border)]">
                 {data.inflows.map((r: any) => (
-                  <Tr key={r.id}>
-                    <Td className="text-[var(--color-ink-soft)]">{fmtDate(r.date)}</Td>
-                    <Td>{r.customerName ?? '—'}</Td>
-                    <Td>
+                  <div key={r.id} className="px-4 py-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-medium">{r.customerName ?? '—'}</div>
+                        <div className="text-[13px] text-[var(--color-ink-soft)] mt-0.5">
+                          {fmtDate(r.date)}
+                        </div>
+                      </div>
+                      <Money cents={r.amountCents} tone="positive" className="font-semibold shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Badge tone="neutral">{r.method}</Badge>
-                    </Td>
-                    <Td className="text-[var(--color-ink-soft)]">{r.memo || '—'}</Td>
-                    <Td className="text-right">
-                      <Money cents={r.amountCents} tone="positive" />
-                    </Td>
-                  </Tr>
+                      {r.memo && (
+                        <span className="text-[13px] text-[var(--color-ink-soft)]">{r.memo}</span>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-[var(--color-border-strong)] bg-[var(--color-surface-2)]">
-                  <td colSpan={4} className="px-4 py-3 text-right uppercase tracking-wider text-[11px] text-[var(--color-ink-faint)] font-semibold">
+                <div className="px-4 py-3 flex items-center justify-between bg-[var(--color-surface-2)] border-t-2 border-[var(--color-border-strong)]">
+                  <span className="uppercase tracking-wider text-[11px] text-[var(--color-ink-faint)] font-semibold">
                     Total inflows
-                  </td>
-                  <td className="px-4 py-3 text-right tabular font-semibold">
-                    <Money cents={data.totalIn} tone="positive" />
-                  </td>
-                </tr>
-              </tfoot>
-            </Table>
+                  </span>
+                  <Money cents={data.totalIn} tone="positive" className="font-semibold" />
+                </div>
+              </div>
+              <div className="hidden sm:block">
+                <Table>
+                  <THead>
+                    <tr>
+                      <Th>Date</Th>
+                      <Th>Customer</Th>
+                      <Th>Method</Th>
+                      <Th>Memo</Th>
+                      <Th className="text-right">Amount</Th>
+                    </tr>
+                  </THead>
+                  <tbody>
+                    {data.inflows.map((r: any) => (
+                      <Tr key={r.id}>
+                        <Td className="text-[var(--color-ink-soft)]">{fmtDate(r.date)}</Td>
+                        <Td>{r.customerName ?? '—'}</Td>
+                        <Td>
+                          <Badge tone="neutral">{r.method}</Badge>
+                        </Td>
+                        <Td className="text-[var(--color-ink-soft)]">{r.memo || '—'}</Td>
+                        <Td className="text-right">
+                          <Money cents={r.amountCents} tone="positive" />
+                        </Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-[var(--color-border-strong)] bg-[var(--color-surface-2)]">
+                      <td colSpan={4} className="px-4 py-3 text-right uppercase tracking-wider text-[11px] text-[var(--color-ink-faint)] font-semibold">
+                        Total inflows
+                      </td>
+                      <td className="px-4 py-3 text-right tabular font-semibold">
+                        <Money cents={data.totalIn} tone="positive" />
+                      </td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </div>
+            </>
           )}
 
           <div className="px-6 pt-6 pb-2 text-[11px] uppercase tracking-wider text-[var(--color-ink-faint)] font-semibold">

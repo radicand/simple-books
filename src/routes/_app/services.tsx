@@ -276,11 +276,11 @@ export function ModalDialog({
     <ModalCloseContext.Provider value={{ close: requestClose, closeNow: onClose }}>
       {shield && <div className="fixed inset-0 z-[60]" aria-hidden />}
       <div
-      className="fixed inset-0 z-40 flex items-end sm:items-start justify-center p-0 sm:p-4 sm:p-8 bg-[oklch(0.22_0.012_270/0.4)] backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-end sm:items-start justify-center p-0 sm:p-4 sm:p-8 bg-[oklch(0.22_0.012_270/0.4)] backdrop-blur-[2px]"
       onClick={requestClose}
     >
       <div
-        className={`w-full sm:mt-12 max-h-[min(92dvh,100%)] sm:max-h-none flex flex-col overflow-hidden ${size === 'lg' ? 'sm:max-w-[820px]' : 'sm:max-w-[480px]'} bg-[var(--color-surface)] border border-[var(--color-border)] rounded-t-[20px] sm:rounded-[14px] shadow-[var(--shadow-pop)]`}
+        className={`w-full sm:mt-12 max-h-[min(85dvh,calc(100dvh-env(safe-area-inset-bottom)))] sm:max-h-none flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)] sm:pb-0 ${size === 'lg' ? 'sm:max-w-[820px]' : 'sm:max-w-[480px]'} bg-[var(--color-surface)] border border-[var(--color-border)] rounded-t-[20px] sm:rounded-[14px] shadow-[var(--shadow-pop)]`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between shrink-0">
@@ -293,7 +293,7 @@ export function ModalDialog({
             <Icon d="M18 6L6 18M6 6l12 12" />
           </button>
         </div>
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1">{children}</div>
+        <div className="p-4 sm:p-5 pb-6 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
     </ModalCloseContext.Provider>

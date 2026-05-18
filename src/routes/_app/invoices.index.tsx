@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   PageHeader,
   Card,
@@ -23,6 +23,7 @@ export const Route = createFileRoute('/_app/invoices/')({
 
 function InvoicesPage() {
   const invoices = Route.useLoaderData()
+  const navigate = useNavigate()
 
   return (
     <>
@@ -64,7 +65,11 @@ function InvoicesPage() {
             </THead>
             <tbody>
               {invoices.map((i: any) => (
-                <Tr key={i.id} className="cursor-pointer">
+                <Tr
+                  key={i.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate({ to: '/invoices/$id', params: { id: i.id } })}
+                >
                   <Td className="font-medium">
                     <Link to="/invoices/$id" params={{ id: i.id }} className="hover:underline">
                       {i.number}

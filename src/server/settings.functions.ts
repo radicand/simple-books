@@ -24,7 +24,7 @@ export const upsertMileageRate = createServerFn({ method: 'POST' })
     z
       .object({
         taxYear: z.number().int().min(2000).max(2100),
-        centsPerMile: z.number().min(0).max(5),
+        centsPerMile: z.number().min(0).max(500),
       })
       .parse(d),
   )

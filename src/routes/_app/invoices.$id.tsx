@@ -14,11 +14,19 @@ import {
   Td,
 } from '~/components/ui'
 import { getInvoice, voidInvoice } from '~/server/invoices.functions'
+import { listAttachments } from '~/server/attachments.functions'
+import { RecordAttachmentsCard } from '~/components/record-attachments-card'
 import { fmtDateLong, fmtDate } from '~/lib/date'
 import { microToDecimal } from '~/lib/money'
 
 export const Route = createFileRoute('/_app/invoices/$id')({
-  loader: ({ params }) => getInvoice({ data: { id: params.id } }),
+  loader: async ({ params }) => {
+    const [inv, attachments] = await Promise.all([
+      getInvoice({ data: { id: params.id } }),
+      listAttachments({ data: { sourceType: 'invoice', sourceId: params.id } }),
+    ])
+    return { ...inv, attachments }
+  },
   component: InvoiceDetail,
 })
 
@@ -215,6 +223,10 @@ function InvoiceDetail() {
               )}
             </CardBody>
           </Card>
+
+          <RecordAttachmentsCard
+            items={inv.attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
+          />
         </div>
       </div>
     </>

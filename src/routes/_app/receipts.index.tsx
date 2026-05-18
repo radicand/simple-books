@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   PageHeader,
   Card,
@@ -24,6 +24,7 @@ export const Route = createFileRoute('/_app/receipts/')({
 function ReceiptsPage() {
   const receipts = Route.useLoaderData()
   const router = useRouter()
+  const navigate = useNavigate()
 
   async function del(id: string) {
     if (!confirm('Delete this payment? The invoice will return to Open.')) return
@@ -70,7 +71,11 @@ function ReceiptsPage() {
             </THead>
             <tbody>
               {receipts.map((r: any) => (
-                <Tr key={r.id}>
+                <Tr
+                  key={r.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate({ to: '/receipts/$id', params: { id: r.id } })}
+                >
                   <Td className="text-[var(--color-ink-soft)]">{fmtDate(r.receivedOn)}</Td>
                   <Td>{r.customerName ?? '—'}</Td>
                   <Td>
@@ -90,7 +95,10 @@ function ReceiptsPage() {
                   </Td>
                   <Td className="text-right">
                     <button
-                      onClick={() => del(r.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void del(r.id)
+                      }}
                       className="text-[var(--color-ink-faint)] hover:text-[var(--color-negative)] p-1"
                       aria-label="Delete payment"
                     >
