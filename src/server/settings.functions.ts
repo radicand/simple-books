@@ -37,7 +37,7 @@ export const upsertMileageRate = createServerFn({ method: 'POST' })
       .values({ taxYear: data.taxYear, rateMicroPerMile })
       .onConflictDoUpdate({
         target: mileageRates.taxYear,
-        set: { rateMicroPerMile, updatedAt: new Date() },
+        set: { rateMicroPerMile, updatedAt: Date.now() },
       })
     return { ok: true }
   })
