@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/radicand/simple-books/compare/v0.1.4...v0.1.5) (2026-05-18)
+
+
+### Bug Fixes
+
+* display issues ([6c0e752](https://github.com/radicand/simple-books/commit/6c0e752556273b0a70721f15271bdda9f2b8357c))
+
 ## [0.1.4](https://github.com/radicand/simple-books/compare/v0.1.3...v0.1.4) (2026-05-17)
 
 
