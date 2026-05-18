@@ -56,7 +56,10 @@ helm template sb deploy/helm/simple-books \
 
 ## K8s
 
-- **replicaCount: 1** — bundled SQLite; PVC at `/app/data`.
+- **replicaCount: 1** with default SQLite; PVC at `/app/data` (SQLite file + local uploads).
+- **Production:** set `postgresql.enabled: true` (bundled Bitnami chart) or `database.externalUrl`
+  for managed Postgres. SQLite on a PVC is not durable — prefer PostgreSQL for real installs.
+- Run `helm dependency update deploy/helm/simple-books` before lint/package when using Postgres subchart.
 - Set `BETTER_AUTH_URL` to the public URL; OIDC redirect must match.
 - **OIDC / SSO:** With `OIDC_*` set, successful IdP login auto-provisions users
   (new email) or links to an existing user (same email). Control access in your

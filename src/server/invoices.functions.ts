@@ -144,7 +144,7 @@ export const createInvoice = createServerFn({ method: 'POST' }).middleware([requ
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
-    const { db, sqlite } = await import('~/db/client')
+    const { db } = await import('~/db/client')
     const { invoices, invoiceLines } = await import('~/db/schema')
 
     const linesParsed = parseInvoiceLines(data.lines)
@@ -152,26 +152,24 @@ export const createInvoice = createServerFn({ method: 'POST' }).middleware([requ
     if (subtotal <= 0) throw new Error('Invoice total must be > 0.')
 
     const year = isoYear(data.issuedOn)
-    const number = nextInvoiceNumber(sqlite, year)
+    const number = await nextInvoiceNumber(db, year)
     const id = newId('inv')
 
-    db.transaction((tx) => {
-      tx.insert(invoices)
-        .values({
-          id,
-          number,
-          customerId: data.customerId,
-          issuedOn: data.issuedOn,
-          dueOn: data.dueOn,
-          status: 'open',
-          memo: data.memo?.trim() || null,
-          subtotalCents: subtotal,
-        })
-        .run()
+    await db.transaction(async (tx) => {
+      await tx.insert(invoices).values({
+        id,
+        number,
+        customerId: data.customerId,
+        issuedOn: data.issuedOn,
+        dueOn: data.dueOn,
+        status: 'open',
+        memo: data.memo?.trim() || null,
+        subtotalCents: subtotal,
+      })
       for (const l of linesParsed) {
-        tx.insert(invoiceLines).values({ ...l, invoiceId: id }).run()
+        await tx.insert(invoiceLines).values({ ...l, invoiceId: id })
       }
-      postInvoiceJournal(tx, {
+      await postInvoiceJournal(tx, {
         invoiceId: id,
         invoiceNumber: number,
         issuedOn: data.issuedOn,
@@ -229,18 +227,19 @@ export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requ
       }
     }
 
-    db.transaction((tx) => {
-      reverseInvoiceJournal(tx, {
+    await db.transaction(async (tx) => {
+      await reverseInvoiceJournal(tx, {
         invoiceId: inv.id,
         invoiceNumber: inv.number,
         subtotalCents: inv.subtotalCents,
         date: inv.issuedOn,
       })
-      tx.delete(invoiceLines).where(eq(invoiceLines.invoiceId, data.id)).run()
+      await tx.delete(invoiceLines).where(eq(invoiceLines.invoiceId, data.id))
       for (const l of linesParsed) {
-        tx.insert(invoiceLines).values({ ...l, invoiceId: data.id }).run()
+        await tx.insert(invoiceLines).values({ ...l, invoiceId: data.id })
       }
-      tx.update(invoices)
+      await tx
+        .update(invoices)
         .set({
           customerId: data.customerId,
           issuedOn: data.issuedOn,
@@ -249,15 +248,14 @@ export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requ
           subtotalCents: subtotal,
         })
         .where(eq(invoices.id, data.id))
-        .run()
-      postInvoiceJournal(tx, {
+      await postInvoiceJournal(tx, {
         invoiceId: inv.id,
         invoiceNumber: inv.number,
         issuedOn: data.issuedOn,
         subtotalCents: subtotal,
       })
       if (editTiedToPayment) {
-        recalcInvoiceStatusSync(tx, data.id)
+        await recalcInvoiceStatusSync(tx, data.id)
       }
     })
     return { id: data.id, number: inv.number }
@@ -277,19 +275,16 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
 
     const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
     await deleteAttachmentsForSource('invoice', data.id)
-    db.transaction((tx) => {
-      const receiptCount = (
-        tx
-          .select({ c: sql<number>`COUNT(*)` })
-          .from(cashReceipts)
-          .where(eq(cashReceipts.invoiceId, data.id))
-          .all() as Array<{ c: number }>
-      )[0]
+    await db.transaction(async (tx) => {
+      const [receiptCount] = await tx
+        .select({ c: sql<number>`COUNT(*)` })
+        .from(cashReceipts)
+        .where(eq(cashReceipts.invoiceId, data.id))
       if (Number(receiptCount?.c ?? 0) > 0) {
         throw new Error('Cannot void an invoice with payments. Delete the payments first.')
       }
-      tx.update(invoices).set({ status: 'void' }).where(eq(invoices.id, data.id)).run()
-      reverseInvoiceJournal(tx, {
+      await tx.update(invoices).set({ status: 'void' }).where(eq(invoices.id, data.id))
+      await reverseInvoiceJournal(tx, {
         invoiceId: data.id,
         invoiceNumber: inv.number,
         subtotalCents: inv.subtotalCents,

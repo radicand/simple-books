@@ -1,6 +1,7 @@
 import { createServerFn, createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth, oidcEnabled, oidcDisplayName } from '~/lib/auth'
+import { resolveDisplayUser } from '~/lib/oidc-display-user'
 
 /**
  * Server middleware: load the current session (may be null) and inject it
@@ -27,19 +28,15 @@ export const requireAuthMiddleware = createMiddleware({ type: 'function' })
 export const getSession = createServerFn({ method: 'GET' })
   .middleware([sessionMiddleware])
   .handler(async ({ context }) => {
-    return context.session
-      ? { user: context.session.user, sessionId: context.session.session.id }
-      : null
+    if (!context.session) return null
+    const user = await resolveDisplayUser(context.session.user)
+    return { user, sessionId: context.session.session.id }
   })
 
 export const getAuthConfig = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const { db } = await import('~/db/client')
-    const { sql } = await import('drizzle-orm')
-    const rows = (await db.all(sql`SELECT COUNT(*) as c FROM user`)) as Array<{
-      c: number
-    }>
-    const userCount = Number(rows[0]?.c ?? 0)
+    const { countUsers } = await import('~/db/user-count')
+    const userCount = await countUsers()
     return {
       oidcEnabled,
       oidcDisplayName,

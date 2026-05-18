@@ -1,15 +1,20 @@
 apiVersion: v2
 name: simple-books
-description: Sole-proprietor bookkeeping (TanStack Start + Bun + SQLite)
+description: Sole-proprietor bookkeeping made simple
 type: application
 version: 0.1.6
 appVersion: 0.1.6
 kubeVersion: '>=1.25.0-0'
 keywords:
   - bookkeeping
-  - sqlite
+  - accounting
 home: https://github.com/radicand/simple-books
 sources:
   - https://github.com/radicand/simple-books
 maintainers:
   - name: radicand
+dependencies:
+  - name: postgresql
+    version: 18.6.6
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled

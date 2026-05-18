@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import {
   PageHeader,
@@ -45,6 +45,7 @@ export const Route = createFileRoute('/_app/invoices/$id_/edit')({
 function EditInvoicePage() {
   const { inv, customers, services } = Route.useLoaderData()
   const navigate = useNavigate()
+  const router = useRouter()
   const [customerId, setCustomerId] = useState(inv.customerId)
   const [issuedOn, setIssuedOn] = useState(inv.issuedOn)
   const [dueOn, setDueOn] = useState(inv.dueOn)
@@ -145,6 +146,7 @@ function EditInvoicePage() {
           ...(tiedToPayment ? { subtotalOverride: invoiceTotal } : {}),
         },
       })
+      await router.invalidate()
       navigate({ to: '/invoices/$id', params: { id: inv.id } })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))

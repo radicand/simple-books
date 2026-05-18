@@ -43,7 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ghost:
         'bg-transparent text-[var(--color-ink)] border-transparent hover:bg-[var(--color-surface-2)]',
       danger:
-        'bg-[var(--color-surface)] text-[var(--color-negative)] border-[var(--color-border-strong)] hover:bg-[oklch(0.96_0.04_25)]',
+        'bg-[var(--color-surface)] text-[var(--color-negative)] border-[var(--color-border-strong)] hover:bg-[var(--color-danger-surface)]',
     }[intent]
     return (
       <button
@@ -79,11 +79,13 @@ Textarea.displayName = 'Textarea'
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...rest }, ref) => (
-    <select ref={ref} className={cx(fieldBase, 'pr-9 appearance-none bg-no-repeat bg-[length:18px_18px] bg-[right_8px_center]', className)}
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23667' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-      }}
+    <select
+      ref={ref}
+      className={cx(
+        fieldBase,
+        'select-control pr-9 appearance-none bg-no-repeat bg-[length:18px_18px] bg-[right_8px_center]',
+        className,
+      )}
       {...rest}
     >
       {children}
@@ -174,11 +176,15 @@ export function Badge({
 }) {
   const tones: Record<string, string> = {
     neutral: 'bg-[var(--color-surface-2)] text-[var(--color-ink-soft)] border-[var(--color-border)]',
-    positive: 'bg-[oklch(0.95_0.05_155)] text-[var(--color-positive)] border-[oklch(0.85_0.07_155)]',
-    negative: 'bg-[oklch(0.96_0.04_25)] text-[var(--color-negative)] border-[oklch(0.88_0.07_25)]',
-    warning: 'bg-[oklch(0.96_0.06_75)] text-[oklch(0.45_0.13_75)] border-[oklch(0.86_0.08_75)]',
-    info: 'bg-[oklch(0.95_0.04_235)] text-[var(--color-info)] border-[oklch(0.85_0.06_235)]',
-    brand: 'bg-[var(--color-brand-soft)] text-[var(--color-brand-ink)] border-[oklch(0.85_0.06_165)]',
+    positive:
+      'bg-[var(--color-badge-positive-bg)] text-[var(--color-positive)] border-[var(--color-badge-positive-border)]',
+    negative:
+      'bg-[var(--color-badge-negative-bg)] text-[var(--color-negative)] border-[var(--color-badge-negative-border)]',
+    warning:
+      'bg-[var(--color-badge-warning-bg)] text-[var(--color-badge-warning-ink)] border-[var(--color-badge-warning-border)]',
+    info: 'bg-[var(--color-badge-info-bg)] text-[var(--color-info)] border-[var(--color-badge-info-border)]',
+    brand:
+      'bg-[var(--color-brand-soft)] text-[var(--color-brand-ink)] border-[var(--color-badge-brand-border)]',
   }
   return (
     <span

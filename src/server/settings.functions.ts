@@ -32,13 +32,13 @@ export const upsertMileageRate = createServerFn({ method: 'POST' })
     const { db } = await import('~/db/client')
     const { mileageRates } = await import('~/db/schema')
     const rateMicroPerMile = centsPerMileToMicro(data.centsPerMile)
-    db.insert(mileageRates)
+    await db
+      .insert(mileageRates)
       .values({ taxYear: data.taxYear, rateMicroPerMile })
       .onConflictDoUpdate({
         target: mileageRates.taxYear,
         set: { rateMicroPerMile, updatedAt: new Date() },
       })
-      .run()
     return { ok: true }
   })
 

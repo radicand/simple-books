@@ -119,7 +119,7 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
-    const { db, sqlite } = await import('~/db/client')
+    const { db } = await import('~/db/client')
     const { cashReceipts, invoices } = await import('~/db/schema')
     const { eq, sql } = await import('drizzle-orm')
 
@@ -130,12 +130,12 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
     const receiptId = newId('rcp')
 
     // Compute next invoice number outside tx (if needed)
-    const number = nextInvoiceNumber(sqlite, isoYear(data.receivedOn))
+    const number = await nextInvoiceNumber(db, isoYear(data.receivedOn))
 
-    db.transaction((tx) => {
+    await db.transaction(async (tx) => {
       let invoiceId = data.invoiceId || null
       if (!invoiceId) {
-        const made = autoCreateInvoiceForPayment(tx, {
+        const made = await autoCreateInvoiceForPayment(tx, {
           customerId: data.customerId,
           date: data.receivedOn,
           amountCents,
@@ -144,43 +144,37 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
         invoiceId = made.id
         createdInvoice = made
       } else {
-        const [inv] = tx
+        const [inv] = await tx
           .select()
           .from(invoices)
           .where(eq(invoices.id, invoiceId))
-          .all() as any[]
         if (!inv) throw new Error('Invoice not found.')
         if (inv.customerId !== data.customerId)
           throw new Error('Invoice belongs to a different customer.')
         if (inv.status === 'void') throw new Error('Invoice is voided.')
-        const paidBefore = (
-          tx
-            .select({
-              t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
-            })
-            .from(cashReceipts)
-            .where(eq(cashReceipts.invoiceId, invoiceId!))
-            .all() as any[]
-        )[0]?.t as number
-        const balanceDue = inv.subtotalCents - Number(paidBefore ?? 0)
+        const [paidBefore] = await tx
+          .select({
+            t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
+          })
+          .from(cashReceipts)
+          .where(eq(cashReceipts.invoiceId, invoiceId!))
+        const balanceDue = inv.subtotalCents - Number(paidBefore?.t ?? 0)
         if (balanceDue <= 0) throw new Error('Invoice has no balance due.')
         if (amountCents > balanceDue)
           throw new Error('Payment exceeds invoice balance.')
       }
 
-      tx.insert(cashReceipts)
-        .values({
-          id: receiptId,
-          receivedOn: data.receivedOn,
-          customerId: data.customerId,
-          invoiceId: invoiceId!,
-          amountCents,
-          method: data.method,
-          memo: data.memo?.trim() || null,
-        })
-        .run()
+      await tx.insert(cashReceipts).values({
+        id: receiptId,
+        receivedOn: data.receivedOn,
+        customerId: data.customerId,
+        invoiceId: invoiceId!,
+        amountCents,
+        method: data.method,
+        memo: data.memo?.trim() || null,
+      })
 
-      postJournalSync(tx, {
+      await postJournalSync(tx, {
         date: data.receivedOn,
         memo: `Payment received${createdInvoice ? ` (auto inv ${(createdInvoice as { number: string }).number})` : ''}`,
         source: 'cash_receipt',
@@ -191,7 +185,7 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
         ],
       })
 
-      recalcInvoiceStatusSync(tx, invoiceId!)
+      await recalcInvoiceStatusSync(tx, invoiceId!)
     })
 
     return { id: receiptId, autoInvoice: createdInvoice }
@@ -233,8 +227,8 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
     const shouldCascade =
       currentInv.autoCreated && Number(receiptCountOnCurrent?.c ?? 0) === 1
 
-    db.transaction((tx) => {
-      postJournalSync(tx, {
+    await db.transaction(async (tx) => {
+      await postJournalSync(tx, {
         date: r.receivedOn,
         memo: `Reverse payment ${r.id}`,
         source: 'reversal',
@@ -246,7 +240,7 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
       })
 
       if (shouldCascade) {
-        cascadeAutoInvoiceAmount(tx, {
+        await cascadeAutoInvoiceAmount(tx, {
           invoiceId: currentInv.id,
           invoiceNumber: currentInv.number,
           oldSubtotalCents: currentInv.subtotalCents,
@@ -254,37 +248,28 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
           newSubtotalCents: amountCents,
         })
       } else {
-        const [targetInv] = tx
+        const [targetInv] = await tx
           .select()
           .from(invoices)
           .where(eq(invoices.id, targetInvoiceId))
-          .all() as Array<{
-          id: string
-          customerId: string
-          status: string
-          subtotalCents: number
-        }>
         if (!targetInv) throw new Error('Invoice not found.')
         if (targetInv.customerId !== data.customerId) {
           throw new Error('Invoice belongs to a different customer.')
         }
         if (targetInv.status === 'void') throw new Error('Invoice is voided.')
 
-        const paidOthers = (
-          tx
-            .select({
-              t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
-            })
-            .from(cashReceipts)
-            .where(
-              and(
-                eq(cashReceipts.invoiceId, targetInvoiceId),
-                ne(cashReceipts.id, data.id),
-              ),
-            )
-            .all() as Array<{ t: number }>
-        )[0]?.t as number
-        const balanceDue = targetInv.subtotalCents - Number(paidOthers ?? 0)
+        const [paidOthers] = await tx
+          .select({
+            t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
+          })
+          .from(cashReceipts)
+          .where(
+            and(
+              eq(cashReceipts.invoiceId, targetInvoiceId),
+              ne(cashReceipts.id, data.id),
+            ),
+          )
+        const balanceDue = targetInv.subtotalCents - Number(paidOthers?.t ?? 0)
         if (balanceDue <= 0 && targetInvoiceId !== r.invoiceId) {
           throw new Error('Invoice has no balance due.')
         }
@@ -293,7 +278,8 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
         }
       }
 
-      tx.update(cashReceipts)
+      await tx
+        .update(cashReceipts)
         .set({
           receivedOn: data.receivedOn,
           customerId: data.customerId,
@@ -303,9 +289,8 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
           memo: data.memo?.trim() || null,
         })
         .where(eq(cashReceipts.id, data.id))
-        .run()
 
-      postJournalSync(tx, {
+      await postJournalSync(tx, {
         date: data.receivedOn,
         memo: `Payment received`,
         source: 'cash_receipt',
@@ -316,9 +301,9 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
         ],
       })
 
-      recalcInvoiceStatusSync(tx, r.invoiceId)
+      await recalcInvoiceStatusSync(tx, r.invoiceId)
       if (targetInvoiceId !== r.invoiceId) {
-        recalcInvoiceStatusSync(tx, targetInvoiceId)
+        await recalcInvoiceStatusSync(tx, targetInvoiceId)
       }
     })
 
@@ -342,8 +327,8 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
     const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
     await deleteAttachmentsForSource('cash_receipt', data.id)
 
-    db.transaction((tx) => {
-      postJournalSync(tx, {
+    await db.transaction(async (tx) => {
+      await postJournalSync(tx, {
         date: r.receivedOn,
         memo: `Reverse payment ${r.id}`,
         source: 'reversal',
@@ -353,8 +338,8 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
           { accountCode: ACCT.CASH, creditCents: r.amountCents },
         ],
       })
-      tx.delete(cashReceipts).where(eq(cashReceipts.id, data.id)).run()
-      recalcInvoiceStatusSync(tx, r.invoiceId)
+      await tx.delete(cashReceipts).where(eq(cashReceipts.id, data.id))
+      await recalcInvoiceStatusSync(tx, r.invoiceId)
     })
     return { ok: true }
   })

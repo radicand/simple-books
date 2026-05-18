@@ -7,8 +7,8 @@
     "replicaCount": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 1,
-      "description": "SQLite is single-writer; keep at 1 unless using external DB."
+      "maximum": 10,
+      "description": "Use 1 with SQLite. May increase when postgresql.enabled or database.externalUrl is set."
     },
     "image": {
       "type": "object",
@@ -127,6 +127,23 @@
         "annotations": { "type": "object" }
       },
       "required": ["enabled", "size", "mountPath"]
+    },
+    "postgresql": {
+      "type": "object",
+      "description": "Bundled Bitnami PostgreSQL (recommended for production).",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "externalUrl": {
+          "type": "string",
+          "description": "postgresql:// URL for external/managed Postgres (overrides subchart)."
+        }
+      }
     },
     "env": {
       "type": "object",

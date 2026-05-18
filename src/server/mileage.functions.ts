@@ -87,18 +87,16 @@ export const createMileage = createServerFn({ method: 'POST' })
     if (amountCents <= 0) throw new Error('Computed mileage amount is zero.')
 
     const id = newId('mil')
-    db.transaction((tx) => {
-      tx.insert(mileageEntries)
-        .values({
-          id,
-          tripDate: data.tripDate,
-          milesMicro,
-          rateMicroPerMile,
-          purpose: data.purpose.trim(),
-          amountCents,
-        })
-        .run()
-      postJournalSync(tx, {
+    await db.transaction(async (tx) => {
+      await tx.insert(mileageEntries).values({
+        id,
+        tripDate: data.tripDate,
+        milesMicro,
+        rateMicroPerMile,
+        purpose: data.purpose.trim(),
+        amountCents,
+      })
+      await postJournalSync(tx, {
         date: data.tripDate,
         memo: `Mileage: ${data.purpose.trim()}`,
         source: 'mileage',
@@ -127,8 +125,8 @@ export const deleteMileage = createServerFn({ method: 'POST' })
     if (!m) throw new Error('Mileage entry not found.')
     const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
     await deleteAttachmentsForSource('mileage', data.id)
-    db.transaction((tx) => {
-      postJournalSync(tx, {
+    await db.transaction(async (tx) => {
+      await postJournalSync(tx, {
         date: m.tripDate,
         memo: `Reverse mileage ${m.id}`,
         source: 'reversal',
@@ -138,7 +136,7 @@ export const deleteMileage = createServerFn({ method: 'POST' })
           { accountCode: ACCT.VEHICLE_EXPENSE, creditCents: m.amountCents },
         ],
       })
-      tx.delete(mileageEntries).where(eq(mileageEntries.id, data.id)).run()
+      await tx.delete(mileageEntries).where(eq(mileageEntries.id, data.id))
     })
     return { ok: true }
   })
@@ -169,8 +167,8 @@ export const updateMileage = createServerFn({ method: 'POST' })
     )
     if (amountCents <= 0) throw new Error('Computed mileage amount is zero.')
 
-    db.transaction((tx) => {
-      postJournalSync(tx, {
+    await db.transaction(async (tx) => {
+      await postJournalSync(tx, {
         date: m.tripDate,
         memo: `Reverse mileage ${m.id}`,
         source: 'reversal',
@@ -180,7 +178,8 @@ export const updateMileage = createServerFn({ method: 'POST' })
           { accountCode: ACCT.VEHICLE_EXPENSE, creditCents: m.amountCents },
         ],
       })
-      tx.update(mileageEntries)
+      await tx
+        .update(mileageEntries)
         .set({
           tripDate: data.tripDate,
           milesMicro,
@@ -189,8 +188,7 @@ export const updateMileage = createServerFn({ method: 'POST' })
           amountCents,
         })
         .where(eq(mileageEntries.id, data.id))
-        .run()
-      postJournalSync(tx, {
+      await postJournalSync(tx, {
         date: data.tripDate,
         memo: `Mileage: ${data.purpose.trim()}`,
         source: 'mileage',

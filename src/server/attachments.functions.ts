@@ -42,6 +42,6 @@ export const deleteAttachment = createServerFn({ method: 'POST' })
       .where(eq(attachments.id, data.id))
     if (!row) throw new Error('Attachment not found.')
     await deleteObject(row.storageKey)
-    db.delete(attachments).where(eq(attachments.id, data.id)).run()
+    await db.delete(attachments).where(eq(attachments.id, data.id))
     return { ok: true }
   })

@@ -4,9 +4,10 @@ import { APIError } from 'better-auth/api'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { genericOAuth } from 'better-auth/plugins'
 import { sql } from 'drizzle-orm'
-import { db } from '~/db/client'
+import { db, isPostgres } from '~/db/client'
 import { user } from '~/db/auth-schema'
-import * as authSchema from '~/db/auth-schema'
+import { authSchema } from '~/db/tables'
+import { countUsers } from '~/db/user-count'
 
 const oidcConfigured =
   !!process.env.OIDC_ISSUER_URL &&
@@ -84,10 +85,7 @@ const accountLinking = oidcConfigured
   : { enabled: true as const }
 
 async function assertBootstrapUserSlot(): Promise<void> {
-  const rows = (await db.all(sql`SELECT COUNT(*) as c FROM user`)) as Array<{
-    c: number
-  }>
-  if (Number(rows[0]?.c ?? 0) >= 1) {
+  if ((await countUsers()) >= 1) {
     throw new APIError('FORBIDDEN', {
       message:
         'An account already exists on this install. Sign in instead of creating another user.',
@@ -99,7 +97,7 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
-    provider: 'sqlite',
+    provider: isPostgres() ? 'pg' : 'sqlite',
     schema: authSchema,
     usePlural: false,
   }),

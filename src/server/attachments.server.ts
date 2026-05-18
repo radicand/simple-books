@@ -51,7 +51,7 @@ export async function deleteAttachmentsForSource(
     )
   for (const row of rows) {
     await deleteObject(row.storageKey)
-    db.delete(attachments).where(eq(attachments.id, row.id)).run()
+    await db.delete(attachments).where(eq(attachments.id, row.id))
   }
 }
 
@@ -64,16 +64,14 @@ export async function registerAttachment(input: {
   sizeBytes: number
 }) {
   const id = newId('att')
-  db.insert(attachments)
-    .values({
-      id,
-      sourceType: input.sourceType,
-      sourceId: input.sourceId,
-      storageKey: input.storageKey,
-      fileName: input.fileName,
-      mimeType: input.mimeType,
-      sizeBytes: input.sizeBytes,
-    })
-    .run()
+  await db.insert(attachments).values({
+    id,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId,
+    storageKey: input.storageKey,
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    sizeBytes: input.sizeBytes,
+  })
   return id
 }

@@ -28,6 +28,7 @@ RUN bun install --frozen-lockfile --production \
   && rm -rf /root/.bun/install/cache
 COPY --from=build --chown=app:app /app/.output ./.output
 COPY --from=build --chown=app:app /app/drizzle ./drizzle
+COPY --from=build --chown=app:app /app/drizzle/pg ./drizzle/pg
 COPY --from=build --chown=app:app /app/scripts/migrate.ts ./scripts/migrate.ts
 COPY --chown=app:app docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \

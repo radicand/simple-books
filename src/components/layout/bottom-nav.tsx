@@ -64,7 +64,7 @@ export function BottomNav({
           onClick={() => setMoreOpen(false)}
         >
           <div
-            className="absolute inset-0 bg-[oklch(0.22_0.012_270/0.4)]"
+            className="absolute inset-0 bg-[var(--color-scrim)]"
             aria-hidden
           />
           <div

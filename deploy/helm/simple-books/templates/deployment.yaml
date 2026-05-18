@@ -45,8 +45,14 @@ spec:
           {{- end }}
           env:
             {{- range $key, $val := .Values.env }}
+            {{- if or (ne $key "DATABASE_URL") (and (not $.Values.postgresql.enabled) (not $.Values.database.externalUrl)) }}
             - name: {{ $key }}
               value: {{ $val | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if or .Values.postgresql.enabled .Values.database.externalUrl }}
+            - name: DATABASE_URL
+              value: {{ include "simple-books.databaseUrl" . | quote }}
             {{- end }}
             {{- if .Values.existingSecretName }}
             {{- range $key, $_ := .Values.secretEnv }}

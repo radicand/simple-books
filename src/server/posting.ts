@@ -1,10 +1,9 @@
 /**
  * Posting engine. Every business event becomes a balanced journal entry.
  * Pure (no DB connection, no auth) — caller passes in an open Drizzle tx.
- * Importing this module is client-safe; the work only runs server-side
- * because the tx itself can only be obtained server-side.
  */
-import { eq, sql } from 'drizzle-orm'
+import { eq, like, max, sql } from 'drizzle-orm'
+import type { DB } from '~/db/client'
 import {
   journalEntries,
   journalLines,
@@ -21,12 +20,9 @@ export type PostingLine = {
   memo?: string
 }
 
-/**
- * Insert a balanced journal entry inside a Drizzle bun-sqlite transaction.
- * The tx callback in bun-sqlite is synchronous, so this helper is sync too.
- */
-export function postJournalSync(
-  tx: any,
+/** Insert a balanced journal entry inside a Drizzle transaction. */
+export async function postJournalSync(
+  tx: Parameters<Parameters<DB['transaction']>[0]>[0],
   args: {
     date: string
     memo: string
@@ -34,7 +30,7 @@ export function postJournalSync(
     sourceId?: string
     lines: PostingLine[]
   },
-): string {
+): Promise<string> {
   const debits = args.lines.reduce((s, l) => s + (l.debitCents ?? 0), 0)
   const credits = args.lines.reduce((s, l) => s + (l.creditCents ?? 0), 0)
   if (debits !== credits) {
@@ -43,73 +39,60 @@ export function postJournalSync(
   if (debits === 0) throw new Error('Journal entry has zero amount.')
 
   const entryId = newId('je')
-  tx.insert(journalEntries)
-    .values({
-      id: entryId,
-      date: args.date,
-      memo: args.memo,
-      source: args.source,
-      sourceId: args.sourceId ?? null,
-    })
-    .run()
+  await tx.insert(journalEntries).values({
+    id: entryId,
+    date: args.date,
+    memo: args.memo,
+    source: args.source,
+    sourceId: args.sourceId ?? null,
+  })
   for (let i = 0; i < args.lines.length; i++) {
     const l = args.lines[i]!
-    tx.insert(journalLines)
-      .values({
-        id: newId('jl'),
-        entryId,
-        accountCode: l.accountCode,
-        debitCents: l.debitCents ?? 0,
-        creditCents: l.creditCents ?? 0,
-        memo: l.memo ?? null,
-        position: i,
-      })
-      .run()
+    await tx.insert(journalLines).values({
+      id: newId('jl'),
+      entryId,
+      accountCode: l.accountCode,
+      debitCents: l.debitCents ?? 0,
+      creditCents: l.creditCents ?? 0,
+      memo: l.memo ?? null,
+      position: i,
+    })
   }
   return entryId
 }
 
-/**
- * Insert an auto-created invoice for a stand-alone cash receipt and post
- * its journal entry. Returns { id, number }. Caller computes the next
- * number (since that needs the sqlite query helper).
- */
-export function autoCreateInvoiceForPayment(
-  tx: any,
+export async function autoCreateInvoiceForPayment(
+  tx: Parameters<Parameters<DB['transaction']>[0]>[0],
   args: {
     customerId: string
     date: string
     amountCents: number
     nextNumber: string
   },
-): { id: string; number: string } {
+): Promise<{ id: string; number: string }> {
   const id = newId('inv')
-  tx.insert(invoices)
-    .values({
-      id,
-      number: args.nextNumber,
-      customerId: args.customerId,
-      issuedOn: args.date,
-      dueOn: args.date,
-      status: 'open',
-      memo: 'Auto-created from payment',
-      subtotalCents: args.amountCents,
-      autoCreated: true,
-    })
-    .run()
-  tx.insert(invoiceLines)
-    .values({
-      id: newId('iln'),
-      invoiceId: id,
-      serviceProductId: null,
-      description: 'Services rendered',
-      quantityMicro: 1_000_000,
-      unitPriceCents: args.amountCents,
-      amountCents: args.amountCents,
-      position: 0,
-    })
-    .run()
-  postJournalSync(tx, {
+  await tx.insert(invoices).values({
+    id,
+    number: args.nextNumber,
+    customerId: args.customerId,
+    issuedOn: args.date,
+    dueOn: args.date,
+    status: 'open',
+    memo: 'Auto-created from payment',
+    subtotalCents: args.amountCents,
+    autoCreated: true,
+  })
+  await tx.insert(invoiceLines).values({
+    id: newId('iln'),
+    invoiceId: id,
+    serviceProductId: null,
+    description: 'Services rendered',
+    quantityMicro: 1_000_000,
+    unitPriceCents: args.amountCents,
+    amountCents: args.amountCents,
+    position: 0,
+  })
+  await postJournalSync(tx, {
     date: args.date,
     memo: `Invoice ${args.nextNumber} (auto-created)`,
     source: 'invoice',
@@ -122,12 +105,11 @@ export function autoCreateInvoiceForPayment(
   return { id, number: args.nextNumber }
 }
 
-/** Reverse the original invoice AR/Revenue entry. */
-export function reverseInvoiceJournal(
-  tx: any,
+export async function reverseInvoiceJournal(
+  tx: Parameters<Parameters<DB['transaction']>[0]>[0],
   args: { invoiceId: string; invoiceNumber: string; subtotalCents: number; date: string },
 ) {
-  postJournalSync(tx, {
+  await postJournalSync(tx, {
     date: args.date,
     memo: `Reverse invoice ${args.invoiceNumber}`,
     source: 'reversal',
@@ -139,12 +121,11 @@ export function reverseInvoiceJournal(
   })
 }
 
-/** Post invoice AR/Revenue for the given subtotal. */
-export function postInvoiceJournal(
-  tx: any,
+export async function postInvoiceJournal(
+  tx: Parameters<Parameters<DB['transaction']>[0]>[0],
   args: { invoiceId: string; invoiceNumber: string; issuedOn: string; subtotalCents: number },
 ) {
-  postJournalSync(tx, {
+  await postJournalSync(tx, {
     date: args.issuedOn,
     memo: `Invoice ${args.invoiceNumber}`,
     source: 'invoice',
@@ -156,12 +137,8 @@ export function postInvoiceJournal(
   })
 }
 
-/**
- * Update an auto-created invoice to a new amount (single line) and fix journals.
- * Used when the sole payment on an auto invoice is edited.
- */
-export function cascadeAutoInvoiceAmount(
-  tx: any,
+export async function cascadeAutoInvoiceAmount(
+  tx: Parameters<Parameters<DB['transaction']>[0]>[0],
   args: {
     invoiceId: string
     invoiceNumber: string
@@ -170,34 +147,32 @@ export function cascadeAutoInvoiceAmount(
     newSubtotalCents: number
   },
 ) {
-  reverseInvoiceJournal(tx, {
+  await reverseInvoiceJournal(tx, {
     invoiceId: args.invoiceId,
     invoiceNumber: args.invoiceNumber,
     subtotalCents: args.oldSubtotalCents,
     date: args.issuedOn,
   })
-  tx.update(invoices)
+  await tx
+    .update(invoices)
     .set({
       subtotalCents: args.newSubtotalCents,
       issuedOn: args.issuedOn,
       dueOn: args.issuedOn,
     })
     .where(eq(invoices.id, args.invoiceId))
-    .run()
-  tx.delete(invoiceLines).where(eq(invoiceLines.invoiceId, args.invoiceId)).run()
-  tx.insert(invoiceLines)
-    .values({
-      id: newId('iln'),
-      invoiceId: args.invoiceId,
-      serviceProductId: null,
-      description: 'Services rendered',
-      quantityMicro: 1_000_000,
-      unitPriceCents: args.newSubtotalCents,
-      amountCents: args.newSubtotalCents,
-      position: 0,
-    })
-    .run()
-  postInvoiceJournal(tx, {
+  await tx.delete(invoiceLines).where(eq(invoiceLines.invoiceId, args.invoiceId))
+  await tx.insert(invoiceLines).values({
+    id: newId('iln'),
+    invoiceId: args.invoiceId,
+    serviceProductId: null,
+    description: 'Services rendered',
+    quantityMicro: 1_000_000,
+    unitPriceCents: args.newSubtotalCents,
+    amountCents: args.newSubtotalCents,
+    position: 0,
+  })
+  await postInvoiceJournal(tx, {
     invoiceId: args.invoiceId,
     invoiceNumber: args.invoiceNumber,
     issuedOn: args.issuedOn,
@@ -205,39 +180,35 @@ export function cascadeAutoInvoiceAmount(
   })
 }
 
-/** Set invoice status to open or paid from receipt totals (skips void). */
-export function recalcInvoiceStatusSync(tx: any, invoiceId: string) {
-  const [inv] = tx
+export async function recalcInvoiceStatusSync(
+  tx: Parameters<Parameters<DB['transaction']>[0]>[0],
+  invoiceId: string,
+) {
+  const [inv] = await tx
     .select()
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
-    .all() as Array<{ subtotalCents: number; status: string }>
   if (!inv || inv.status === 'void') return
-  const totalPaid = (
-    tx
-      .select({
-        t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
-      })
-      .from(cashReceipts)
-      .where(eq(cashReceipts.invoiceId, invoiceId))
-      .all() as Array<{ t: number }>
-  )[0]?.t as number
-  const status = Number(totalPaid ?? 0) >= inv.subtotalCents ? 'paid' : 'open'
-  tx.update(invoices).set({ status }).where(eq(invoices.id, invoiceId)).run()
+  const [paid] = await tx
+    .select({
+      t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
+    })
+    .from(cashReceipts)
+    .where(eq(cashReceipts.invoiceId, invoiceId))
+  const totalPaid = Number(paid?.t ?? 0)
+  const status = totalPaid >= inv.subtotalCents ? 'paid' : 'open'
+  await tx.update(invoices).set({ status }).where(eq(invoices.id, invoiceId))
 }
 
-/** Generate the next invoice number for a year, given a sqlite handle. */
-export function nextInvoiceNumber(sqlite: any, year: number): string {
-  const row = sqlite
-    .query<{ n: string | null }, [string]>(
-      `SELECT MAX(number) AS n FROM invoices WHERE number LIKE ?`,
-    )
-    .get(`${year}-%`)
+export async function nextInvoiceNumber(db: DB, year: number): Promise<string> {
+  const [row] = await db
+    .select({ n: max(invoices.number) })
+    .from(invoices)
+    .where(like(invoices.number, `${year}-%`))
   const last = row?.n ? Number(String(row.n).split('-')[1]) : 0
   return `${year}-${String((last || 0) + 1).padStart(4, '0')}`
 }
 
-// ---- Canonical account codes (must match the seed) ----
 export const ACCT = {
   CASH: '1000',
   AR: '1100',

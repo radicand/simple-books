@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
-const BASE = 'http://localhost:3000'
 const SHOTS = 'docs/screens'
 mkdirSync(SHOTS, { recursive: true })
 
@@ -9,8 +8,8 @@ mkdirSync(SHOTS, { recursive: true })
 const visibleText = (page: import('@playwright/test').Page, text: string | RegExp) =>
   page.getByText(text).filter({ visible: true })
 
-// Single end-to-end happy path. Assumes the server is running with a fresh
-// DB (`bun run db:reset && bun run dev`).
+// Single end-to-end happy path. Playwright starts a dev server on a free port
+// with a temporary SQLite database (see playwright.config.ts).
 
 const viewports = [
   { name: 'compact', width: 390, height: 844 },
@@ -21,7 +20,7 @@ const viewports = [
 for (const vp of viewports) {
   test(`login layout at ${vp.name} (${vp.width}px)`, async ({ page }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height })
-    await page.goto(`${BASE}/login`)
+    await page.goto('/login')
     await expect(page.getByText('simple-books')).toBeVisible()
     await expect(page.locator('form')).toBeVisible()
   })
@@ -32,7 +31,7 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
 
   // ---- Sign up the first/only owner ----
-  await page.goto(`${BASE}/login`)
+  await page.goto('/login')
   await expect(page.getByRole('heading', { name: /create your owner/i })).toBeVisible()
   await page.screenshot({ path: `${SHOTS}/01-login.png` })
   await page.fill('#name', 'Test Owner')
@@ -74,9 +73,11 @@ test('the full sole-proprietor flow works', async ({ page }) => {
 
   // ---- Edit invoice (open, no payments) ----
   const invoiceId = page.url().split('/invoices/')[1]!.split(/[/?#]/)[0]!
-  await page.goto(`${BASE}/invoices/${invoiceId}/edit`)
+  await page.goto(`/invoices/${invoiceId}/edit`, { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: /edit invoice/i })).toBeVisible()
-  await page.getByLabel('Memo').fill('Phase 1')
+  const memo = page.locator('#i-memo')
+  await memo.click()
+  await memo.pressSequentially('Phase 1')
   await page.getByRole('button', { name: /save changes/i }).click()
   await page.waitForURL(new RegExp(`/invoices/${invoiceId}$`))
   await expect(page.getByText('Phase 1')).toBeVisible()
@@ -127,18 +128,18 @@ test('the full sole-proprietor flow works', async ({ page }) => {
   await page.screenshot({ path: `${SHOTS}/05-balance-sheet.png` })
 
   // ---- Cash flow ----
-  await page.goto(`${BASE}/reports/cash-flow`)
+  await page.goto('/reports/cash-flow')
   await expect(page.getByText(/closing cash/i)).toBeVisible()
   await expect(visibleText(page, '$350.00').first()).toBeVisible()
   await page.screenshot({ path: `${SHOTS}/06-cash-flow.png` })
 
   // ---- Capture remaining screenshots ----
-  await page.goto(`${BASE}/dashboard`)
+  await page.goto('/dashboard')
   await page.screenshot({ path: `${SHOTS}/02-dashboard.png` })
 
-  await page.goto(`${BASE}/invoices`)
+  await page.goto('/invoices')
   await page.screenshot({ path: `${SHOTS}/03-invoices.png` })
 
-  await page.goto(`${BASE}/mileage`)
+  await page.goto('/mileage')
   await page.screenshot({ path: `${SHOTS}/04-mileage.png` })
 })

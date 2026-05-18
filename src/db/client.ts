@@ -1,22 +1,28 @@
 import '@tanstack/react-start/server-only'
-import { Database } from 'bun:sqlite'
-import { drizzle } from 'drizzle-orm/bun-sqlite'
+import { createClient } from '@libsql/client'
+import { drizzle as drizzleLibsql } from 'drizzle-orm/libsql'
+import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
-import * as schema from './schema'
-import * as authSchema from './auth-schema'
+import postgres from 'postgres'
+import { isPostgres, sqliteLibsqlUrl } from './dialect'
+import { authSchema, businessSchema, fullSchema } from './tables'
 
-const dbPath = process.env.DATABASE_URL ?? './data/simple-books.db'
-mkdirSync(dirname(dbPath), { recursive: true })
+function createDb() {
+  if (isPostgres()) {
+    const url = process.env.DATABASE_URL!
+    const sql = postgres(url, { max: 10 })
+    return drizzlePostgres(sql, { schema: fullSchema })
+  }
 
-const sqlite = new Database(dbPath, { create: true })
-sqlite.exec('PRAGMA journal_mode = WAL;')
-sqlite.exec('PRAGMA foreign_keys = ON;')
-sqlite.exec('PRAGMA busy_timeout = 5000;')
+  const url = sqliteLibsqlUrl()
+  const filePath = url.replace(/^file:/, '')
+  mkdirSync(dirname(filePath), { recursive: true })
+  const client = createClient({ url })
+  return drizzleLibsql(client, { schema: fullSchema })
+}
 
-export const db = drizzle({
-  client: sqlite,
-  schema: { ...schema, ...authSchema },
-})
+export const db = createDb()
 export type DB = typeof db
-export { sqlite }
+
+export { businessSchema, authSchema, isPostgres }

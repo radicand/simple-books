@@ -17,3 +17,13 @@ Get the app URL:
 Health check: GET /api/health
 
 Before first login, set BETTER_AUTH_SECRET and BETTER_AUTH_URL (via values.secretEnv or existingSecretName).
+
+Database:
+{{- if .Values.postgresql.enabled }}
+  PostgreSQL (bundled subchart). Set postgresql.auth.password in values for production.
+{{- else if .Values.database.externalUrl }}
+  PostgreSQL (external URL configured).
+{{- else }}
+  SQLite at {{ .Values.env.DATABASE_URL }} on the data volume — fine for demos only.
+  For production, enable postgresql.enabled or set database.externalUrl (SQLite data can be lost).
+{{- end }}

@@ -9,16 +9,19 @@ Single test `tests/smoke.spec.ts` walks the happy path (signup → service → c
 
 ## Running
 
+Playwright starts a Vite dev server on a free port and a temporary SQLite database
+(migrated + seeded); the DB directory is removed when the run finishes.
+
 ```bash
-bun run db:reset
-bun run dev                # terminal 1
-bunx playwright test --project=chromium   # terminal 2
+bun run test
+# or full CI-style path (production build + chromium install):
+bun run test:e2e
 ```
 
 Debug flakes:
 
 ```bash
-bunx playwright test --headed --debug
+bun run test -- --headed --debug
 bunx playwright show-trace test-results/.../trace.zip
 ```
 

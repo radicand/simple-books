@@ -123,3 +123,6 @@ node_modules/
 src/routeTree.gen.ts
 test-results/
 playwright-report/
+
+# Helm vendored subcharts (CI runs helm dependency update)
+deploy/helm/simple-books/charts/

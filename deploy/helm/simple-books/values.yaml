@@ -1,6 +1,7 @@
 # Default values for simple-books.
 # See values.schema.json for field documentation and validation.
 
+# SQLite (default): keep at 1 — single-writer file DB. With postgresql.enabled you may scale out.
 replicaCount: 1
 
 image:
@@ -87,6 +88,23 @@ persistence:
   size: 1Gi
   mountPath: /app/data
   annotations: {}
+
+# Recommended for production: durable Postgres instead of SQLite on a PVC (data loss risk on
+# node loss, failed mounts, or accidental PVC deletion). Set postgresql.enabled or database.externalUrl.
+postgresql:
+  enabled: false
+  auth:
+    username: simplebooks
+    password: "" # required when enabled; use a strong value or existingSecret via Bitnami chart
+    database: simplebooks
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# External/managed Postgres (RDS, Cloud SQL, etc.). Takes precedence over postgresql.enabled.
+database:
+  externalUrl: ""
 
 # Non-secret environment variables (see secretEnv for sensitive values).
 env:

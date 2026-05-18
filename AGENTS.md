@@ -1,6 +1,6 @@
 # simple-books — agent guide
 
-Sole-proprietor bookkeeping on **Bun + TanStack Start + Drizzle (SQLite)**.
+Sole-proprietor bookkeeping on **Bun + TanStack Start + Drizzle (SQLite or PostgreSQL)**.
 
 ## Invariants
 
@@ -34,4 +34,4 @@ Agent Skills in [`.agents/skills/`](.agents/skills/) (`skill-name/SKILL.md`):
 | Server fns | `src/server/*.functions.ts` |
 | Schema | `src/db/schema.ts` |
 | Layout | `src/components/layout/` |
-| Design doc | `DESIGN.md` |
+| Design doc | `DESIGN.md` ([DESIGN.md format](https://github.com/google-labs-code/design.md); `bun run design:lint`) |

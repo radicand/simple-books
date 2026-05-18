@@ -42,7 +42,7 @@ for the engineering recipe.
 | Server | **Nitro v3** (Bun preset, via `nitro/vite`) |
 | App | **TanStack Start** (React 19 + TanStack Router + TanStack Query) |
 | Styling | **Tailwind v4** with a custom OKLCH theme |
-| DB | **SQLite** (`bun:sqlite`, WAL) via **Drizzle ORM** |
+| DB | **SQLite** (local dev) or **PostgreSQL** (production) via **Drizzle ORM** |
 | Auth | **Better Auth** — email/password + generic OIDC plugin |
 | E2E | **Playwright** (a single smoke test) |
 
@@ -60,6 +60,12 @@ cp .env.example .env
 bun run auth:secret   # copy the printed value into BETTER_AUTH_SECRET
 bun run db:migrate
 bun run db:seed
+
+# Optional: PostgreSQL (recommended for any real deployment)
+# docker run -d --name simple-books-pg -e POSTGRES_USER=simplebooks \
+#   -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=simplebooks -p 5432:5432 postgres:18
+# export DATABASE_URL=postgresql://simplebooks:secret@localhost:5432/simplebooks
+# bun run db:migrate && bun run db:seed
 
 # 3. Dev server (http://localhost:3000)
 bun run dev
@@ -84,6 +90,21 @@ email/password). Access control is entirely through your identity provider
 unless you intend everyone who can use that client to reach the books.
 After the first user exists, additional people should be added in your IdP,
 not via public email sign-up.
+
+## Database
+
+- **SQLite** (`DATABASE_URL=./data/simple-books.db`) — zero setup, good for local dev and
+  quick demos. Not recommended for production: the database file lives on disk (or a PVC)
+  and can be **lost** if the volume is deleted, the node fails, or the file is corrupted.
+- **PostgreSQL** (`DATABASE_URL=postgresql://…`) — use for any real-world install. Helm can
+  bundle a Bitnami Postgres subchart (`postgresql.enabled`) or point at managed Postgres
+  (`database.externalUrl`). Migrations live in `drizzle/pg/`; SQLite migrations stay in `drizzle/`.
+
+```bash
+bun run db:generate       # SQLite schema changes
+bun run db:generate:pg    # PostgreSQL schema changes
+bun run db:migrate        # applies the right folder for DATABASE_URL
+```
 
 ## Production build
 

@@ -44,7 +44,7 @@ function SettingsPage() {
       />
 
       {storage.s3Enabled && (
-        <Card className="mb-6 border-[oklch(0.88_0.06_75)] bg-[oklch(0.98_0.03_75)]">
+        <Card className="mb-6 border-[var(--color-warning-border)] bg-[var(--color-warning-surface)]">
           <CardBody className="!py-4 text-[13.5px] text-[var(--color-ink-soft)] leading-relaxed">
             <strong className="text-[var(--color-ink)]">Document retention.</strong> Receipts and
             invoices are stored in your S3-compatible bucket. Configure bucket lifecycle rules so

@@ -1,10 +1,241 @@
+---
+version: alpha
+name: simple-books
+description: Calm double-entry bookkeeping for sole proprietors — warm paper, deep ink, restrained green brand.
+colors:
+  primary: "#2B2D36"
+  secondary: "#5E6069"
+  tertiary: "#1A7A5C"
+  tertiary-hover: "#156B50"
+  on-tertiary: "#FFFFFF"
+  neutral: "#FDFCF9"
+  surface: "#FFFFFF"
+  surface-muted: "#F7F6F2"
+  border: "#E5E4DF"
+  border-strong: "#D0CFC9"
+  ink-faint: "#8A8C94"
+  brand-soft: "#E8F4EF"
+  brand-ink: "#0D4D3A"
+  positive: "#0D5C40"
+  positive-bg: "#E8F5EE"
+  negative: "#C43D2F"
+  negative-bg: "#FCEEEC"
+  warning: "#7A5A08"
+  warning-bg: "#FDF8EC"
+  info: "#2E5A9E"
+  info-bg: "#EEF3FB"
+typography:
+  headline:
+    fontFamily: Inter
+    fontSize: 22px
+    fontWeight: "600"
+    lineHeight: 1.2
+    letterSpacing: -0.02em
+  body-md:
+    fontFamily: Inter
+    fontSize: 14px
+    fontWeight: "400"
+    lineHeight: 1.5
+  label-md:
+    fontFamily: Inter
+    fontSize: 13px
+    fontWeight: "500"
+    lineHeight: 1.4
+  label-caps:
+    fontFamily: Inter
+    fontSize: 11px
+    fontWeight: "500"
+    lineHeight: 1.2
+    letterSpacing: 0.06em
+rounded:
+  md: 10px
+  lg: 14px
+  xl: 20px
+  full: 9999px
+spacing:
+  xs: 4px
+  sm: 8px
+  md: 16px
+  lg: 24px
+  xl: 32px
+  gutter-compact: 16px
+  gutter-comfortable: 24px
+  gutter-spacious: 32px
+components:
+  button-brand:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    padding: 16px
+  button-brand-hover:
+    backgroundColor: "{colors.tertiary-hover}"
+    textColor: "{colors.on-tertiary}"
+  button-neutral:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    padding: 16px
+  input-field:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary}"
+    typography: "{typography.body-md}"
+    rounded: "{rounded.md}"
+    padding: 12px
+  card:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.lg}"
+    padding: 20px
+  badge-positive:
+    backgroundColor: "{colors.positive-bg}"
+    textColor: "{colors.positive}"
+    typography: "{typography.label-caps}"
+    rounded: "{rounded.full}"
+    padding: 4px
+  badge-negative:
+    backgroundColor: "{colors.negative-bg}"
+    textColor: "{colors.negative}"
+    typography: "{typography.label-caps}"
+    rounded: "{rounded.full}"
+    padding: 4px
+  badge-warning:
+    backgroundColor: "{colors.warning-bg}"
+    textColor: "{colors.warning}"
+    typography: "{typography.label-caps}"
+    rounded: "{rounded.full}"
+    padding: 4px
+  badge-info:
+    backgroundColor: "{colors.info-bg}"
+    textColor: "{colors.info}"
+    typography: "{typography.label-caps}"
+    rounded: "{rounded.full}"
+    padding: 4px
+  badge-brand:
+    backgroundColor: "{colors.brand-soft}"
+    textColor: "{colors.brand-ink}"
+    typography: "{typography.label-caps}"
+    rounded: "{rounded.full}"
+    padding: 4px
+  text-secondary:
+    textColor: "{colors.secondary}"
+    typography: "{typography.body-md}"
+  text-faint:
+    textColor: "{colors.ink-faint}"
+    typography: "{typography.body-md}"
+  page-canvas:
+    backgroundColor: "{colors.neutral}"
+  table-header:
+    backgroundColor: "{colors.surface-muted}"
+    textColor: "{colors.secondary}"
+    typography: "{typography.label-caps}"
+  table-row-hover:
+    backgroundColor: "{colors.surface-muted}"
+  field-border:
+    backgroundColor: "{colors.border}"
+  field-border-strong:
+    backgroundColor: "{colors.border-strong}"
+---
+
 # Simple-Books — Design Document
 
 > Google-style design doc covering goals, non-goals, architecture, data model,
 > security posture, and visual design system. Source of truth for design
 > consistency across iterations. Keep this terse and current.
+>
+> Visual tokens follow the [DESIGN.md format](https://github.com/google-labs-code/design.md)
+> (YAML front matter + sections below). Implementation lives in
+> [`src/styles.css`](src/styles.css) as OKLCH CSS variables.
 
----
+## Overview
+
+Calm, considered, paper-like. The aesthetic of a beautifully-laid-out
+accountant's ledger, not a SaaS dashboard. Generous whitespace, restrained
+color, confident typography. The product should feel trustworthy on first load
+for non-accountants recording real double-entry books.
+
+## Colors
+
+Warm paper backgrounds, deep ink text, and a single restrained green for primary
+actions. Semantic greens/reds/ambers carry revenue, expense, and attention — never
+raw color on body copy.
+
+| Role | Token (CSS) | Light (OKLCH) |
+| ---- | ----------- | ------------- |
+| Page background | `--color-bg` | `oklch(0.99 0.005 95)` |
+| Cards / inputs | `--color-surface` | `oklch(1 0 0)` |
+| Striped / hover | `--color-surface-2` | `oklch(0.972 0.006 95)` |
+| Hairlines | `--color-border` | `oklch(0.91 0.006 95)` |
+| Primary text | `--color-ink` | `oklch(0.22 0.012 270)` |
+| Secondary text | `--color-ink-soft` | `oklch(0.45 0.012 270)` |
+| Tertiary text | `--color-ink-faint` | `oklch(0.62 0.012 270)` |
+| Primary actions | `--color-brand` | `oklch(0.5 0.11 165)` |
+| Revenue / cash in | `--color-positive` | `oklch(0.55 0.13 155)` |
+| Expense / void | `--color-negative` | `oklch(0.55 0.18 25)` |
+| Attention | `--color-warning` | `oklch(0.7 0.13 75)` |
+
+**Dark mode (system only):** follows `prefers-color-scheme: dark` — no in-app
+theme toggle, no `localStorage`. The same `--color-*` names are reassigned in
+`@media (prefers-color-scheme: dark)` on `:root`; `color-scheme: light dark` in
+CSS and `<meta name="color-scheme" content="light dark">`. Semantic tokens
+(`--color-scrim`, badge/alert surfaces) also swap in that block.
+
+YAML hex values above are sRGB approximations for agents and `npx @google/design.md lint`;
+authoritative runtime values are OKLCH in `src/styles.css`.
+
+## Typography
+
+- **UI sans:** Inter (`--font-sans`), with `ss01` and `cv11` features on body.
+- **Numerics:** tabular figures on all money and quantities (`font-variant-numeric: tabular-nums` / `.tabular`).
+- **Scale:** page titles ~20–22px semibold; card titles 15px; body 13–14px; table headers 11px uppercase.
+
+## Layout
+
+Mobile-primary responsive shell (see [`app-shell.tsx`](src/components/layout/app-shell.tsx)):
+
+| Zone | Breakpoint | Navigation |
+| ---- | ---------- | ---------- |
+| compact | default, &lt;640px | Bottom tab bar + More sheet |
+| comfortable | 640–1023px | 56px icon rail |
+| spacious | ≥1024px | 240px labeled sidebar |
+
+Page max-width 1200px. Gutters: `px-4` / `px-6` / `px-8`. Touch targets ≥44px on compact.
+Preferred spacing rhythm: 4 / 8 / 16 / 24 / 32px (`spacing.*` tokens).
+
+## Elevation & Depth
+
+Almost flat. Cards use `--shadow-card` (subtle 1px lift + hairline). Modals and
+popovers use `--shadow-pop`. Overlays use `--color-scrim` with light backdrop blur.
+Dark mode reduces harsh shadows and uses softer scrims.
+
+## Shapes
+
+`rounded.md` (10px) for inputs and buttons; `rounded.lg` (14px) for cards;
+`rounded.xl` (20px) for modals. Status badges only use `rounded.full` pills.
+
+## Components
+
+Primitives in [`src/components/ui/index.tsx`](src/components/ui/index.tsx) — no
+external UI library:
+
+| Primitive | Notes |
+| --------- | ----- |
+| `Button` | `intent`: brand \| neutral \| ghost \| danger |
+| `Input`, `Textarea`, `Select` | Native controls; select chevron via `.select-control` |
+| `Card`, `Field` | Bordered containers and labeled fields |
+| `Table`, `Money`, `Badge` | Tabular money; status pills use semantic badge tokens |
+| `ModalDialog` | In `services.tsx`; scrim uses `--color-scrim` |
+
+Front-matter `components.*` entries map to these intents for linting and agent guidance.
+
+## Do's and Don'ts
+
+- **Do** use `var(--color-*)` tokens — never hardcode OKLCH in route or layout files.
+- **Do** respect system light/dark only; never add a theme chooser.
+- **Do** use `Money` and `Badge` for currency and status — not ad-hoc text colors.
+- **Do** keep WCAG AA contrast when adding new surfaces (lint with `bun run design:lint`).
+- **Don't** use charts, neon accents, or dense dashboard layouts in MVP.
+- **Don't** mix sharp and soft radii on the same view (stick to md/lg/xl scale).
 
 ## 1. Background
 
@@ -191,87 +422,7 @@ Both reports render as semantic HTML tables (printable). No charts in MVP.
 - **Headers**: Nitro sets `X-Content-Type-Options`, `X-Frame-Options`,
   `Referrer-Policy`, plus a baseline CSP in production.
 
-## 9. Visual Design System
-
-### Mood
-
-Calm, considered, paper-like. The aesthetic of a beautifully-laid-out
-accountant's ledger, not a SaaS dashboard. Generous whitespace, restrained
-color, confident typography.
-
-### Type
-
-- **UI sans**: `"Inter", system-ui, sans-serif`.
-- **Numerics**: tabular numerals everywhere money or quantities appear
-  (`font-variant-numeric: tabular-nums`).
-- **Display**: same Inter family, just larger and tighter.
-
-### Color tokens (in `src/styles.css` `@theme`)
-
-| token | light | role |
-| ----- | ----- | ---- |
-| `--color-bg` | `oklch(0.99 0.005 95)` | page background (warm paper) |
-| `--color-surface` | `oklch(1 0 0)` | cards, table rows |
-| `--color-surface-2` | `oklch(0.97 0.005 95)` | striped row, hover |
-| `--color-border` | `oklch(0.91 0.005 95)` | hairlines |
-| `--color-ink` | `oklch(0.22 0.01 270)` | primary text (deep navy-black) |
-| `--color-ink-soft` | `oklch(0.45 0.01 270)` | secondary text |
-| `--color-ink-faint` | `oklch(0.62 0.01 270)` | tertiary text |
-| `--color-brand` | `oklch(0.52 0.13 165)` | primary actions (deep green) |
-| `--color-brand-soft` | `oklch(0.94 0.04 165)` | brand tint |
-| `--color-positive` | `oklch(0.55 0.13 155)` | revenue, cash in |
-| `--color-negative` | `oklch(0.55 0.18 25)` | expense, draws, void |
-| `--color-warning` | `oklch(0.72 0.13 75)` | overdue, attention |
-
-Dark mode is out of scope for MVP but tokens use OKLCH so a future dark theme
-is a one-block swap.
-
-### Spacing & rhythm
-
-Tailwind's defaults; preferred rhythm `4 / 6 / 8 / 12 / 16` (px×0.25). Page
-gutters: `px-8` on desktop, `px-4` mobile. Section vertical rhythm: `py-10`.
-
-### Radii
-
-`md=10px` (inputs, buttons), `lg=14px` (cards), `xl=20px` (modals). No
-fully-rounded pills except for status badges.
-
-### Elevation
-
-Almost flat. Use a single soft shadow (`0 1px 2px rgb(0 0 0 / 0.04)`) on cards
-and dropdowns only. Modals get a slightly stronger drop.
-
-### Iconography
-
-Inline SVGs (no icon library dependency for MVP). Stroke 1.5, currentColor.
-Sized 16/18/20 to match text x-height.
-
-### Tone of voice
-
-Direct, warm, lowercase headlines where helpful ("today, this month, this
-year"), Title Case for navigation labels. Never marketing-y. Numbers are
-always formatted with locale and currency symbol (`Intl.NumberFormat`).
-
-### Component primitives
-
-Implemented from scratch (no external UI library) in `src/components/ui/`:
-
-- `Button` (`intent`: brand | neutral | ghost | danger; `size`: sm | md)
-- `Input`, `Textarea`, `Select`, `DateInput`
-- `Card`, `Field` (label + input + help), `Stack`, `Inline`
-- `Table` (semantic `<table>`, tabular nums, striped option)
-- `Money` (renders cents as currency, color-aware)
-- `Badge` (status pills)
-- `Dialog` (native `<dialog>`)
-
-### Layout (mobile-primary)
-
-Three breakpoints: **compact** (&lt;640px) bottom tab bar + “More” sheet;
-**comfortable** (640–1023px) icon rail; **spacious** (≥1024px) full 240px
-sidebar. Page gutters: `px-4` / `px-6` / `px-8`. Touch targets ≥44px on
-compact.
-
-## 10. Open questions
+## 9. Open questions
 
 - Per-user data isolation and roles — deferred.
 - Real PDF invoice export — deferred (record exists, presentation later).

@@ -17,9 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: production
-      BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_SECRET: ci-test-secret-not-for-production-use-only-32chars
-      DATABASE_URL: ./data/simple-books.db
     steps:
       - uses: actions/checkout@v6
 
@@ -68,8 +66,15 @@ jobs:
 
       - name: Helm lint
         run: |
+          helm dependency update deploy/helm/simple-books
           helm lint deploy/helm/simple-books
           helm template test deploy/helm/simple-books \
+            --set secretEnv.BETTER_AUTH_SECRET=ci \
+            --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
+            > /dev/null
+          helm template test-pg deploy/helm/simple-books \
+            --set postgresql.enabled=true \
+            --set postgresql.auth.password=ci-test \
             --set secretEnv.BETTER_AUTH_SECRET=ci \
             --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
             > /dev/null
@@ -86,4 +91,4 @@ jobs:
         run: bunx playwright install-deps chromium
 
       - name: Smoke tests
-        run: bash scripts/e2e.sh --skip-build
+        run: bun run test

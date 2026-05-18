@@ -276,7 +276,7 @@ export function ModalDialog({
     <ModalCloseContext.Provider value={{ close: requestClose, closeNow: onClose }}>
       {shield && <div className="fixed inset-0 z-[60]" aria-hidden />}
       <div
-      className="fixed inset-0 z-50 flex items-end sm:items-start justify-center p-0 sm:p-4 sm:p-8 bg-[oklch(0.22_0.012_270/0.4)] backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-end sm:items-start justify-center p-0 sm:p-4 sm:p-8 bg-[var(--color-scrim)] backdrop-blur-[2px]"
       onClick={requestClose}
     >
       <div

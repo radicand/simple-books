@@ -1,19 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { sql } from 'drizzle-orm'
 import { auth, oidcEnabled } from '~/lib/auth'
-import { db } from '~/db/client'
-
-async function userCount(): Promise<number> {
-  const rows = (await db.all(sql`SELECT COUNT(*) as c FROM user`)) as Array<{
-    c: number
-  }>
-  return Number(rows[0]?.c ?? 0)
-}
+import { countUsers } from '~/db/user-count'
 
 async function guardSignUp(request: Request): Promise<Response | null> {
   const url = new URL(request.url)
   if (!url.pathname.includes('/sign-up/email')) return null
-  if ((await userCount()) === 0) return null
+  if ((await countUsers()) === 0) return null
   return Response.json(
     {
       message:

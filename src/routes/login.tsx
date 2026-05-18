@@ -174,7 +174,7 @@ function LoginPage() {
                 </Field>
 
                 {error && (
-                  <div className="text-[13px] text-[var(--color-negative)] bg-[oklch(0.97_0.03_25)] border border-[oklch(0.88_0.07_25)] rounded-[10px] px-3 py-2">
+                  <div className="text-[13px] text-[var(--color-negative)] bg-[var(--color-danger-surface)] border border-[var(--color-danger-border)] rounded-[10px] px-3 py-2">
                     {error}
                   </div>
                 )}
@@ -195,7 +195,7 @@ function LoginPage() {
             )}
 
             {!showEmailForm && error && (
-              <div className="text-[13px] text-[var(--color-negative)] bg-[oklch(0.97_0.03_25)] border border-[oklch(0.88_0.07_25)] rounded-[10px] px-3 py-2 mt-4">
+              <div className="text-[13px] text-[var(--color-negative)] bg-[var(--color-danger-surface)] border border-[var(--color-danger-border)] rounded-[10px] px-3 py-2 mt-4">
                 {error}
               </div>
             )}
