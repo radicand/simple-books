@@ -78,6 +78,11 @@ jobs:
             --set secretEnv.BETTER_AUTH_SECRET=ci \
             --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
             > /dev/null
+          helm template test-pg-ext deploy/helm/simple-books \
+            --set database.externalUrl=postgresql://u:p@db.example:5432/simplebooks \
+            --set secretEnv.BETTER_AUTH_SECRET=ci \
+            --set secretEnv.BETTER_AUTH_URL=http://localhost:3000 \
+            > /dev/null
 
       - name: Docker build
         run: docker build -t simple-books:ci .

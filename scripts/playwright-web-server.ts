@@ -3,9 +3,16 @@
  * Temp directory is removed when this process exits (including SIGTERM from Playwright).
  */
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
+// CI runs `bun run build` before smoke tests. Stale `.output` makes `vite dev` serve
+// production SSR bundles where auth cookies/session handling no longer match dev HTTP.
+const outputDir = join(process.cwd(), '.output')
+if (existsSync(outputDir)) {
+  rmSync(outputDir, { recursive: true, force: true })
+}
 
 const port = process.env.PLAYWRIGHT_PORT
 if (!port) {
