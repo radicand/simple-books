@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.8](https://github.com/radicand/simple-books/compare/v0.1.7...v0.1.8) (2026-05-18)
+
+
+### Bug Fixes
+
+* **ci:** run Playwright smoke tests against production build ([248f0f1](https://github.com/radicand/simple-books/commit/248f0f180802180e4b79c459107fa96b0609f146))
+* failing startup in docker ([61b0dbd](https://github.com/radicand/simple-books/commit/61b0dbd8cfb261703c6fa390fc40baa70ba8de5d))
+* failing tests ([61b0dbd](https://github.com/radicand/simple-books/commit/61b0dbd8cfb261703c6fa390fc40baa70ba8de5d))
+
 ## [0.1.7](https://github.com/radicand/simple-books/compare/v0.1.6...v0.1.7) (2026-05-18)
 
 
