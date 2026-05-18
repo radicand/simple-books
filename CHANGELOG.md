@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/radicand/simple-books/compare/v0.1.8...v0.1.9) (2026-05-18)
+
+
+### Bug Fixes
+
+* pg db types ([5dbacae](https://github.com/radicand/simple-books/commit/5dbacaea6070f1ec64a40874160415b1d041de4b))
+
 ## [0.1.8](https://github.com/radicand/simple-books/compare/v0.1.7...v0.1.8) (2026-05-18)
 
 
