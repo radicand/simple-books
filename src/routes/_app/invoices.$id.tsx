@@ -78,7 +78,8 @@ function InvoiceDetail() {
                 </Button>
               </Link>
             )}
-            {inv.status === 'open' && inv.receipts.length === 0 && (
+            {inv.status !== 'void' &&
+              (inv.receipts.length === 0 || inv.autoCreated) && (
               <Link to="/invoices/$id/edit" params={{ id: inv.id }}>
                 <Button intent="ghost">Edit</Button>
               </Link>

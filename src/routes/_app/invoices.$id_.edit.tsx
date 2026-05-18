@@ -19,7 +19,12 @@ import {
 import { listCustomers } from '~/server/customers.functions'
 import { listServices } from '~/server/services.functions'
 import { getInvoice, updateInvoice } from '~/server/invoices.functions'
-import { parseDollarsToCents, parseQuantityToMicro, microToDecimal } from '~/lib/money'
+import {
+  parseDollarsToCents,
+  parseQuantityToMicro,
+  microToDecimal,
+  fmtCents,
+} from '~/lib/money'
 
 function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2)
@@ -54,6 +59,10 @@ function EditInvoicePage() {
   )
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const tiedToPayment = inv.autoCreated && inv.paidCents > 0
+  const [invoiceTotal, setInvoiceTotal] = useState(() =>
+    tiedToPayment ? centsToInput(inv.paidCents) : '',
+  )
 
   const subtotal = useMemo(() => {
     return lines.reduce((s, l) => {
@@ -67,7 +76,20 @@ function EditInvoicePage() {
     }, 0)
   }, [lines])
 
-  if (inv.status !== 'open' || inv.receipts.length > 0) {
+  const effectiveSubtotal = useMemo(() => {
+    if (!tiedToPayment) return subtotal
+    try {
+      return parseDollarsToCents(invoiceTotal || '0')
+    } catch {
+      return 0
+    }
+  }, [tiedToPayment, subtotal, invoiceTotal])
+
+  const canEdit =
+    inv.status !== 'void' &&
+    ((inv.status === 'open' && inv.receipts.length === 0) || tiedToPayment)
+
+  if (!canEdit) {
     return (
       <Card>
         <CardBody className="text-center py-14">
@@ -120,6 +142,7 @@ function EditInvoicePage() {
             quantity: l.quantity,
             unitPrice: l.unitPrice,
           })),
+          ...(tiedToPayment ? { subtotalOverride: invoiceTotal } : {}),
         },
       })
       navigate({ to: '/invoices/$id', params: { id: inv.id } })
@@ -134,19 +157,29 @@ function EditInvoicePage() {
     <>
       <PageHeader
         title={`Edit invoice ${inv.number}`}
-        subtitle="Update line items and dates. The invoice number stays the same."
+        subtitle={
+          tiedToPayment
+            ? `Classify this payment (${fmtCents(inv.paidCents)}). The invoice total must stay ${fmtCents(inv.paidCents)}.`
+            : 'Update line items and dates. The invoice number stays the same.'
+        }
       />
 
       <form onSubmit={submit} className="space-y-6">
         <Card>
           <CardBody>
             <FormGrid cols={3}>
-              <Field label="Customer" htmlFor="i-cus" required>
+              <Field
+                label="Customer"
+                htmlFor="i-cus"
+                required
+                hint={tiedToPayment ? 'Locked for auto-created invoices.' : undefined}
+              >
                 <Select
                   id="i-cus"
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
                   required
+                  disabled={tiedToPayment}
                 >
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -193,6 +226,32 @@ function EditInvoicePage() {
           />
         </Card>
 
+        {tiedToPayment && (
+          <Card>
+            <CardBody>
+              <Field
+                label="Invoice total"
+                htmlFor="i-total"
+                required
+                hint={`Must match the payment (${fmtCents(inv.paidCents)}). Use this when line items do not add up exactly.`}
+              >
+                <Input
+                  id="i-total"
+                  inputMode="decimal"
+                  value={invoiceTotal}
+                  onChange={(e) => setInvoiceTotal(e.target.value)}
+                  required
+                />
+              </Field>
+              {subtotal > 0 && subtotal !== effectiveSubtotal && (
+                <p className="mt-2 text-[12px] text-[var(--color-ink-faint)]">
+                  Line items sum to {fmtCents(subtotal)}; invoice total uses the override above.
+                </p>
+              )}
+            </CardBody>
+          </Card>
+        )}
+
         <Card>
           <CardBody>
             <Field label="Memo" htmlFor="i-memo" hint="Optional. Shown on the invoice record.">
@@ -216,7 +275,11 @@ function EditInvoicePage() {
               Cancel
             </Button>
           </Link>
-          <Button intent="brand" type="submit" disabled={busy || subtotal <= 0}>
+          <Button
+            intent="brand"
+            type="submit"
+            disabled={busy || effectiveSubtotal <= 0 || (tiedToPayment && effectiveSubtotal !== inv.paidCents)}
+          >
             {busy ? 'Saving…' : 'Save changes'}
           </Button>
         </FormActions>

@@ -11,6 +11,7 @@ import {
   nextInvoiceNumber,
   reverseInvoiceJournal,
   postInvoiceJournal,
+  recalcInvoiceStatusSync,
 } from '~/server/posting'
 
 const lineInputSchema = z.object({
@@ -28,7 +29,11 @@ const createSchema = z.object({
   lines: z.array(lineInputSchema).min(1),
 })
 
-const updateSchema = createSchema.extend({ id: z.string() })
+const updateSchema = createSchema.extend({
+  id: z.string(),
+  /** When set, used as invoice subtotal (must match payments on auto-created invoices). */
+  subtotalOverride: z.string().optional(),
+})
 
 function parseInvoiceLines(lines: z.infer<typeof lineInputSchema>[]) {
   return lines.map((l, i) => {
@@ -186,23 +191,43 @@ export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requ
     const [inv] = await db.select().from(invoices).where(eq(invoices.id, data.id))
     if (!inv) throw new Error('Invoice not found.')
     if (inv.status === 'void') throw new Error('Cannot edit a void invoice.')
-    if (inv.status !== 'open') {
-      throw new Error('Only open invoices can be edited. Delete payments first.')
-    }
 
-    const receiptCount = (
+    const paidRow = (
       await db
-        .select({ c: sql<number>`COUNT(*)` })
+        .select({ t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)` })
         .from(cashReceipts)
         .where(eq(cashReceipts.invoiceId, data.id))
     )[0]
-    if (Number(receiptCount?.c ?? 0) > 0) {
-      throw new Error('Cannot edit an invoice with payments. Delete the payments first.')
+    const paidCents = Number(paidRow?.t ?? 0)
+    const editTiedToPayment = inv.autoCreated && paidCents > 0
+
+    if (!editTiedToPayment) {
+      if (inv.status !== 'open') {
+        throw new Error('Only open invoices can be edited. Delete payments first.')
+      }
+      if (paidCents > 0) {
+        throw new Error('Cannot edit an invoice with payments. Delete the payments first.')
+      }
     }
 
     const linesParsed = parseInvoiceLines(data.lines)
-    const subtotal = linesParsed.reduce((s, l) => s + l.amountCents, 0)
+    const lineSubtotal = linesParsed.reduce((s, l) => s + l.amountCents, 0)
+    let subtotal = lineSubtotal
+    if (data.subtotalOverride?.trim()) {
+      subtotal = parseDollarsToCents(data.subtotalOverride)
+    }
     if (subtotal <= 0) throw new Error('Invoice total must be > 0.')
+
+    if (editTiedToPayment) {
+      if (data.customerId !== inv.customerId) {
+        throw new Error('Customer cannot be changed on an auto-created invoice.')
+      }
+      if (subtotal !== paidCents) {
+        throw new Error(
+          'Invoice total must equal the payment amount. Adjust the total or line items.',
+        )
+      }
+    }
 
     db.transaction((tx) => {
       reverseInvoiceJournal(tx, {
@@ -231,6 +256,9 @@ export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requ
         issuedOn: data.issuedOn,
         subtotalCents: subtotal,
       })
+      if (editTiedToPayment) {
+        recalcInvoiceStatusSync(tx, data.id)
+      }
     })
     return { id: data.id, number: inv.number }
   })
