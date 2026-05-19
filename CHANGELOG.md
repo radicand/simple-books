@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.10](https://github.com/radicand/simple-books/compare/v0.1.9...v0.1.10) (2026-05-19)
+
+
+### Features
+
+* add attachment delete and upload from edit screens ([caa8216](https://github.com/radicand/simple-books/commit/caa82167a25fb3690220e70b2b0ddf6b59efec2e))
+
+
+### Bug Fixes
+
+* add onChanged callbacks and sync local state with props ([8d50b45](https://github.com/radicand/simple-books/commit/8d50b45ed62c23cfdab625d2ee4222ddd9238edc))
+* ci & test optimizations ([c2b0a38](https://github.com/radicand/simple-books/commit/c2b0a389be5e52836358cbac5e844afb1b334ee6))
+
 ## [0.1.9](https://github.com/radicand/simple-books/compare/v0.1.8...v0.1.9) (2026-05-18)
 
 
