@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   PageHeader,
@@ -43,6 +43,7 @@ export const Route = createFileRoute('/_app/receipts/$id_/edit')({
 function EditReceipt() {
   const { receipt, customers, attachments } = Route.useLoaderData()
   const navigate = useNavigate()
+  const router = useRouter()
   const [customerId, setCustomerId] = useState(receipt.customerId)
   const [invoiceId, setInvoiceId] = useState(receipt.invoiceId)
   const [openInvoices, setOpenInvoices] = useState<Array<{
@@ -255,6 +256,7 @@ function EditReceipt() {
           items={attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
           sourceType="cash_receipt"
           sourceId={receipt.id}
+          onChanged={() => router.invalidate()}
         />
 
         <FormActions>

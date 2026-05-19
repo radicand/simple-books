@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardBody, Button, Icon } from '~/components/ui'
 import { deleteAttachment } from '~/server/attachments.functions'
 import { uploadPendingAttachment } from '~/components/attachment-upload'
@@ -11,7 +11,7 @@ interface AttachmentItem {
 }
 
 export function EditableAttachmentsCard({
-  items: initialItems,
+  items: propItems,
   sourceType,
   sourceId,
   onChanged,
@@ -21,10 +21,15 @@ export function EditableAttachmentsCard({
   sourceId: string
   onChanged?: () => void
 }) {
-  const [items, setItems] = useState(initialItems)
+  const [items, setItems] = useState(propItems)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Sync local state when props change (e.g. after router.invalidate)
+  useEffect(() => {
+    setItems(propItems)
+  }, [propItems])
 
   async function handleDelete(id: string, fileName: string) {
     if (!confirm(`Delete attachment "${fileName}"?`)) return

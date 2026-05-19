@@ -274,6 +274,7 @@ function EditInvoicePage() {
           items={attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
           sourceType="invoice"
           sourceId={inv.id}
+          onChanged={() => router.invalidate()}
         />
 
         {error && (
