@@ -108,7 +108,7 @@ jobs:
     # Official image: browsers + OS libs (fonts, codecs) pre-installed — no install-deps/apt.
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.resolve-playwright.outputs.version }}-noble
-      options: --user 1001
+      options: --user root
     env:
       CI: true
       NODE_ENV: production
@@ -116,6 +116,11 @@ jobs:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install unzip for setup-bun
+        run: |
+          apt-get update
+          apt-get install -y unzip
 
       - uses: oven-sh/setup-bun@v2
         with:
