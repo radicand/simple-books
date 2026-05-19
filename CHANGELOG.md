@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/radicand/simple-books/compare/v0.1.10...v0.1.11) (2026-05-19)
+
+
+### Bug Fixes
+
+* **e2e:** reuse bootstrapped session for mileage attachment test ([a1174ba](https://github.com/radicand/simple-books/commit/a1174ba1a2a2ba378aabe780723e5946a29d30e5))
+
 ## [0.1.10](https://github.com/radicand/simple-books/compare/v0.1.9...v0.1.10) (2026-05-19)
 
 
