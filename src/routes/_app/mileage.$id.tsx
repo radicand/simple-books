@@ -14,7 +14,7 @@ import {
   getMileageRateCentsPerMile,
 } from '~/server/mileage.functions'
 import { listAttachments } from '~/server/attachments.functions'
-import { RecordAttachmentsCard } from '~/components/record-attachments-card'
+import { EditableAttachmentsCard } from '~/components/editable-attachments-card'
 import { MileageTripForm } from '~/components/mileage-trip-form'
 import { fmtDateLong } from '~/lib/date'
 import { microToDecimal } from '~/lib/money'
@@ -95,8 +95,11 @@ function MileageDetail() {
           </CardBody>
         </Card>
 
-        <RecordAttachmentsCard
+        <EditableAttachmentsCard
           items={attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
+          sourceType="mileage"
+          sourceId={entry.id}
+          onChanged={() => router.invalidate()}
         />
       </div>
 

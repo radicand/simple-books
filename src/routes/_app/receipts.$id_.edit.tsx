@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   PageHeader,
@@ -18,6 +18,8 @@ import {
   updateReceipt,
   openInvoicesForCustomer,
 } from '~/server/receipts.functions'
+import { listAttachments } from '~/server/attachments.functions'
+import { EditableAttachmentsCard } from '~/components/editable-attachments-card'
 import { fmtDate } from '~/lib/date'
 import { FormGrid } from '~/components/form-grid'
 import { FormActions } from '~/components/form-actions'
@@ -28,18 +30,20 @@ function centsToInput(cents: number): string {
 
 export const Route = createFileRoute('/_app/receipts/$id_/edit')({
   loader: async ({ params }) => {
-    const [receipt, customers] = await Promise.all([
+    const [receipt, customers, attachments] = await Promise.all([
       getReceipt({ data: { id: params.id } }),
       listCustomers(),
+      listAttachments({ data: { sourceType: 'cash_receipt', sourceId: params.id } }),
     ])
-    return { receipt, customers }
+    return { receipt, customers, attachments }
   },
   component: EditReceipt,
 })
 
 function EditReceipt() {
-  const { receipt, customers } = Route.useLoaderData()
+  const { receipt, customers, attachments } = Route.useLoaderData()
   const navigate = useNavigate()
+  const router = useRouter()
   const [customerId, setCustomerId] = useState(receipt.customerId)
   const [invoiceId, setInvoiceId] = useState(receipt.invoiceId)
   const [openInvoices, setOpenInvoices] = useState<Array<{
@@ -247,6 +251,13 @@ function EditReceipt() {
             )}
           </CardBody>
         </Card>
+
+        <EditableAttachmentsCard
+          items={attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
+          sourceType="cash_receipt"
+          sourceId={receipt.id}
+          onChanged={() => router.invalidate()}
+        />
 
         <FormActions>
           <Link to="/receipts/$id" params={{ id: receipt.id }}>
