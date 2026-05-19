@@ -2,31 +2,29 @@
 
 > Calm, real double-entry bookkeeping for sole proprietors who sell services.
 
-`simple-books` is an opinionated MVP built for one person: the owner of a
+`simple-books` is a bookkeeping platform built for one person: the owner of a
 service business who does not need (or want) QuickBooks. It produces a
 *real* set of books — every entry posts to a balanced double-entry journal —
 without ever asking the user to read one.
 
 ![Balance sheet](docs/screens/05-balance-sheet.png)
 
-## What it does today (MVP scope)
+## What it does today
 
 - **Service products** — what you sell, with a rate per unit (hour, session,
   project…).
-- **Customers** — keep it minimal; just enough to attach to invoices.
+- **Customers** — just enough info to attach to invoices.
 - **Invoices** — line items, automatic numbering (`YYYY-NNNN`), status
   (open · paid · void). Records only — no email, no payment processing,
-  no PDFs in MVP. Edit open invoices with no payments (reverses and
-  reposts the journal entry).
+  no PDFs - this is for you, it is not a customer portal. Edit open invoices with no payments (reverses and reposts the journal entry).
 - **Cash receipts** — log payments as they come in. If there isn't an
   invoice yet, one is created automatically and the same transaction posts
-  it. Method-aware (cash, check, card, transfer, other). Edit payments
-  later; stand-alone payments keep the auto-created invoice in sync.
+  it. Method-aware (cash, check, card, transfer, other). Stand-alone payments keep the auto-created invoice in sync.
 - **Mileage** — record business driving with the IRS standard rates
   (default `$0.725/mile` in 2026); each trip credits Owner's Contribution and debits
-  Vehicle Expense. Trips can be edited after the fact.
+  Vehicle Expense. Trips can be edited after the fact if needed.
 - **Reports** — Balance Sheet and Cash Flow, rendered as readable tables.
-  No charts, by design. Assets always equal Liabilities + Equity.
+  No fancy charts, by design. Assets always equal Liabilities + Equity.
 
 Behind the scenes every event becomes a balanced journal entry — see
 [`DESIGN.md`](DESIGN.md) §5–7 for the data model and posting rules and
@@ -37,11 +35,11 @@ for the engineering recipe.
 
 | Layer | Choice |
 | ----- | ------ |
-| Runtime | **Bun 1.3+** |
-| Build | **Vite 8** |
-| Server | **Nitro v3** (Bun preset, via `nitro/vite`) |
-| App | **TanStack Start** (React 19 + TanStack Router + TanStack Query) |
-| Styling | **Tailwind v4** with a custom OKLCH theme |
+| Runtime | **Bun** |
+| Build | **Vite** |
+| Server | **Nitro** (Bun preset, via `nitro/vite`) |
+| App | **TanStack Start** (React + TanStack Router + TanStack Query) |
+| Styling | **Tailwind** with a custom OKLCH theme and Google's DESIGN.md pattern |
 | DB | **SQLite** (local dev) or **PostgreSQL** (production) via **Drizzle ORM** |
 | Auth | **Better Auth** — email/password + generic OIDC plugin |
 | E2E | **Playwright** (`bun run build:e2e && bun run test`) |
@@ -89,13 +87,13 @@ email/password). Access control is entirely through your identity provider
 — do not wire up arbitrary “social login” OAuth apps (Google, GitHub, etc.)
 unless you intend everyone who can use that client to reach the books.
 After the first user exists, additional people should be added in your IdP,
-not via public email sign-up.
+not via public email sign-up. The system is really intended to be used with OIDC, even if lightweight. Auth0 is one of many good free options for small teams.
 
 ## Database
 
 - **SQLite** (`DATABASE_URL=./data/simple-books.db`) — zero setup, good for local dev and
   quick demos. Not recommended for production: the database file lives on disk (or a PVC)
-  and can be **lost** if the volume is deleted, the node fails, or the file is corrupted.
+  and can be **lost** if the volume is deleted, the node fails, or the file is corrupted, or is manually edit and corrupts the SQLite WAL.
 - **PostgreSQL** (`DATABASE_URL=postgresql://…`) — use for any real-world install. Helm can
   bundle a Bitnami Postgres subchart (`postgresql.enabled`) or point at managed Postgres
   (`database.externalUrl`). Migrations live in `drizzle/pg/`; SQLite migrations stay in `drizzle/`.
