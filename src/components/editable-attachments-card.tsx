@@ -49,10 +49,16 @@ export function EditableAttachmentsCard({
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    const id = sourceId?.trim()
+    if (!id) {
+      setError('Record id missing. Refresh the page and try again.')
+      e.target.value = ''
+      return
+    }
     setUploading(true)
     setError(null)
     try {
-      await uploadPendingAttachment(file, sourceType, sourceId)
+      await uploadPendingAttachment(file, sourceType, id)
       // Re-fetch isn't ideal but keeps things simple; parent can invalidate
       onChanged?.()
     } catch (err: unknown) {

@@ -24,7 +24,7 @@ export const Route = createFileRoute('/api/attachments/upload')({
         const form = await request.formData()
         const file = form.get('file')
         const sourceType = form.get('sourceType') as string
-        const sourceId = form.get('sourceId') as string
+        const sourceId = String(form.get('sourceId') ?? '').trim()
 
         if (!(file instanceof File)) {
           return Response.json({ message: 'Missing file.' }, { status: 400 })
@@ -49,7 +49,10 @@ export const Route = createFileRoute('/api/attachments/upload')({
           const { assertSourceExists } = await import(
             '~/server/attachments.server'
           )
-          await assertSourceExists(typedSource, sourceId)
+          const canonicalSourceId = await assertSourceExists(
+            typedSource,
+            sourceId,
+          )
 
           const declared = (file.type || 'application/octet-stream') as string
           if (!ALLOWED_MIME_TYPES.includes(declared as AllowedMimeType)) {
@@ -61,7 +64,7 @@ export const Route = createFileRoute('/api/attachments/upload')({
 
           const storageKey = buildStorageKey(
             typedSource,
-            sourceId,
+            canonicalSourceId,
             newId('blob'),
           )
           await putObject(storageKey, bytes, declared)
@@ -70,7 +73,7 @@ export const Route = createFileRoute('/api/attachments/upload')({
           )
           const id = await registerAttachment({
             sourceType: typedSource,
-            sourceId,
+            sourceId: canonicalSourceId,
             storageKey,
             fileName: file.name,
             mimeType: declared,

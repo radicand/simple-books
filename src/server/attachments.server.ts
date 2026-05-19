@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '~/db/client'
 import {
   attachments,
@@ -6,34 +6,58 @@ import {
   invoices,
   mileageEntries,
 } from '~/db/schema'
+import { normalizeSourceId } from '~/lib/attachment-security'
 import { newId } from '~/lib/ids'
 import { deleteObject } from '~/lib/storage.server'
 
+async function findMileageId(sourceId: string): Promise<string | null> {
+  const trimmed = sourceId.trim()
+  const [exact] = await db
+    .select({ id: mileageEntries.id })
+    .from(mileageEntries)
+    .where(eq(mileageEntries.id, trimmed))
+  if (exact) return exact.id
+
+  const normalized = normalizeSourceId(trimmed)
+  if (normalized !== trimmed) {
+    const [norm] = await db
+      .select({ id: mileageEntries.id })
+      .from(mileageEntries)
+      .where(eq(mileageEntries.id, normalized))
+    if (norm) return norm.id
+  }
+
+  const [ci] = await db
+    .select({ id: mileageEntries.id })
+    .from(mileageEntries)
+    .where(sql`lower(${mileageEntries.id}) = lower(${trimmed})`)
+  return ci?.id ?? null
+}
+
+/** Returns the canonical id stored in the database. */
 export async function assertSourceExists(
   sourceType: 'invoice' | 'cash_receipt' | 'mileage',
   sourceId: string,
-): Promise<void> {
+): Promise<string> {
   if (sourceType === 'invoice') {
     const [row] = await db
       .select({ id: invoices.id })
       .from(invoices)
-      .where(eq(invoices.id, sourceId))
+      .where(eq(invoices.id, sourceId.trim()))
     if (!row) throw new Error('Invoice not found.')
-    return
+    return row.id
   }
   if (sourceType === 'cash_receipt') {
     const [row] = await db
       .select({ id: cashReceipts.id })
       .from(cashReceipts)
-      .where(eq(cashReceipts.id, sourceId))
+      .where(eq(cashReceipts.id, sourceId.trim()))
     if (!row) throw new Error('Receipt not found.')
-    return
+    return row.id
   }
-  const [row] = await db
-    .select({ id: mileageEntries.id })
-    .from(mileageEntries)
-    .where(eq(mileageEntries.id, sourceId))
-  if (!row) throw new Error('Mileage entry not found.')
+  const id = await findMileageId(sourceId)
+  if (!id) throw new Error('Mileage entry not found.')
+  return id
 }
 
 export async function deleteAttachmentsForSource(

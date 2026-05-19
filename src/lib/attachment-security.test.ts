@@ -3,6 +3,7 @@ import {
   assertSafeSourceId,
   assertSafeStorageKey,
   buildStorageKey,
+  normalizeSourceId,
   safeContentDispositionFilename,
 } from './attachment-security'
 
@@ -13,9 +14,24 @@ describe('assertSafeSourceId', () => {
     expect(() => assertSafeSourceId('mil_0123456789ABCDEF')).not.toThrow()
   })
 
+  test('accepts trimmed and lowercased suffix', () => {
+    expect(() => assertSafeSourceId('  mil_0123456789abcdef  ')).not.toThrow()
+  })
+
   test('rejects path traversal', () => {
     expect(() => assertSafeSourceId('../../../etc/passwd')).toThrow()
     expect(() => assertSafeSourceId('inv_../foo')).toThrow()
+  })
+
+  test('rejects missing id', () => {
+    expect(() => assertSafeSourceId('')).toThrow()
+    expect(() => assertSafeSourceId('undefined')).toThrow()
+  })
+})
+
+describe('normalizeSourceId', () => {
+  test('uppercases suffix', () => {
+    expect(normalizeSourceId('mil_abc')).toBe('mil_ABC')
   })
 })
 
@@ -42,6 +58,17 @@ describe('buildStorageKey', () => {
     )
     expect(key).toBe(
       'invoice/inv_0123456789ABCDEF/blob_0123456789ABCDEF',
+    )
+  })
+
+  test('builds mileage key', () => {
+    const key = buildStorageKey(
+      'mileage',
+      'mil_0123456789ABCDEF',
+      'blob_0123456789ABCDEF',
+    )
+    expect(key).toBe(
+      'mileage/mil_0123456789ABCDEF/blob_0123456789ABCDEF',
     )
   })
 })

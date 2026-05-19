@@ -1,13 +1,34 @@
 /** Client-safe helpers for attachment paths and download headers. */
 
-const SOURCE_ID_RE = /^(inv|rcp|mil)_[0-9A-HJKMNP-TV-Z]{16}$/
+const STRICT_SOURCE_ID_RE = /^(inv|rcp|mil)_[0-9A-HJKMNP-TV-Z]{16}$/
+const PREFIXED_SOURCE_ID_RE = /^(inv|rcp|mil)_[a-zA-Z0-9_-]+$/
+const MAX_PREFIXED_SOURCE_ID_LEN = 72
+
 const STORAGE_KEY_RE =
-  /^(invoice|cash_receipt|mileage)\/(inv|rcp|mil)_[0-9A-HJKMNP-TV-Z]{16}\/blob_[0-9A-HJKMNP-TV-Z]{16}$/
+  /^(invoice|cash_receipt|mileage)\/(inv|rcp|mil)_[a-zA-Z0-9_-]+\/blob_[0-9A-HJKMNP-TV-Z]{16}$/
+
+/** Uppercase Crockford suffix; keeps inv_|rcp_|mil_ prefix as sent. */
+export function normalizeSourceId(id: string): string {
+  const s = id.trim()
+  const sep = s.indexOf('_')
+  if (sep <= 0) return s
+  return `${s.slice(0, sep + 1)}${s.slice(sep + 1).toUpperCase()}`
+}
 
 export function assertSafeSourceId(id: string): void {
-  if (!SOURCE_ID_RE.test(id)) {
+  const s = id.trim()
+  if (!s || s === 'undefined' || s === 'null' || s.includes('..')) {
     throw new Error('Invalid source id.')
   }
+  if (STRICT_SOURCE_ID_RE.test(s)) return
+  const normalized = normalizeSourceId(s)
+  if (
+    PREFIXED_SOURCE_ID_RE.test(normalized) &&
+    normalized.length <= MAX_PREFIXED_SOURCE_ID_LEN
+  ) {
+    return
+  }
+  throw new Error('Invalid source id.')
 }
 
 export function assertSafeStorageKey(key: string): void {
