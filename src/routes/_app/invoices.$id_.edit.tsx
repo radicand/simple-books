@@ -19,6 +19,8 @@ import {
 import { listCustomers } from '~/server/customers.functions'
 import { listServices } from '~/server/services.functions'
 import { getInvoice, updateInvoice } from '~/server/invoices.functions'
+import { listAttachments } from '~/server/attachments.functions'
+import { EditableAttachmentsCard } from '~/components/editable-attachments-card'
 import {
   parseDollarsToCents,
   parseQuantityToMicro,
@@ -32,18 +34,19 @@ function centsToInput(cents: number): string {
 
 export const Route = createFileRoute('/_app/invoices/$id_/edit')({
   loader: async ({ params }) => {
-    const [inv, customers, services] = await Promise.all([
+    const [inv, customers, services, attachments] = await Promise.all([
       getInvoice({ data: { id: params.id } }),
       listCustomers(),
       listServices(),
+      listAttachments({ data: { sourceType: 'invoice', sourceId: params.id } }),
     ])
-    return { inv, customers, services }
+    return { inv, customers, services, attachments }
   },
   component: EditInvoicePage,
 })
 
 function EditInvoicePage() {
-  const { inv, customers, services } = Route.useLoaderData()
+  const { inv, customers, services, attachments } = Route.useLoaderData()
   const navigate = useNavigate()
   const router = useRouter()
   const [customerId, setCustomerId] = useState(inv.customerId)
@@ -266,6 +269,12 @@ function EditInvoicePage() {
             </Field>
           </CardBody>
         </Card>
+
+        <EditableAttachmentsCard
+          items={attachments.map((a) => ({ id: a.id, fileName: a.fileName }))}
+          sourceType="invoice"
+          sourceId={inv.id}
+        />
 
         {error && (
           <div className="text-[13px] text-[var(--color-negative)]">{error}</div>
