@@ -37,7 +37,7 @@ Default suite: [`business-flow.spec.ts`](business-flow.spec.ts) (two serial test
 | View mileage rates table | `/settings` | Y | `lifecycle` asserts 2026 @ 72.5¢ |
 | Edit mileage rate | `/settings` | — | UI save not yet covered in e2e |
 | Edit / delete trip | `/mileage/$id` | — | |
-| Mileage attachments | trip form | — | |
+| Mileage attachments | `/mileage/$id` | Y | `mileage-attachment-upload` |
 | **Reports** |
 | Balance sheet + in balance | `/reports` | Y | |
 | Cash flow (date range) | `/reports/cash-flow` | Y | |

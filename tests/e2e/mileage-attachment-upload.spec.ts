@@ -1,21 +1,21 @@
 import { test, expect } from '@playwright/test'
 import { E2E_OWNER } from './helpers/auth'
-import { signUpOwner, visibleText } from './helpers/ui'
+import { signIn } from './helpers/ui'
 import path from 'node:path'
 import { writeFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
 test('upload attachment on existing mileage detail page', async ({ page }) => {
-  await signUpOwner(page, E2E_OWNER)
+  await signIn(page, E2E_OWNER)
 
   await page.getByRole('complementary').getByRole('link', { name: 'Mileage' }).click()
-  await page.getByRole('button', { name: /log your first trip/i }).click()
-  await page.locator('#m-miles').fill('25')
-  await page.locator('#m-purpose').fill('Attachment test trip')
-  await page.getByRole('button', { name: /^log trip$/i }).click()
-  const trip = visibleText(page, 'Attachment test trip').first()
-  await expect(trip).toBeVisible()
-  await trip.click()
+  await page.waitForURL(/\/mileage/)
+  await page
+    .getByRole('main')
+    .getByText('Rate check trip')
+    .filter({ visible: true })
+    .first()
+    .click()
   await page.waitForURL(/\/mileage\/mil_/)
 
   const tmp = mkdtempSync(path.join(tmpdir(), 'sb-upload-'))
