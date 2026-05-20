@@ -22,7 +22,12 @@ Database:
 {{- if .Values.database.existingSecretName }}
   PostgreSQL (DATABASE_URL from Secret {{ .Values.database.existingSecretName }}).
 {{- else if .Values.postgresql.enabled }}
-  PostgreSQL (bundled subchart; password from Bitnami Secret {{ include "simple-books.postgresql.secretName" . }}).
+  PostgreSQL (bundled subchart; credentials from Secret {{ include "simple-books.postgresql.secretName" . }}).
+{{- if and (not .Values.postgresql.auth.existingSecret) (not .Values.postgresql.auth.password) }}
+  WARNING: postgresql.auth.password is empty and auth.existingSecret is unset. GitOps/Argo CD will
+  regenerate the password on every sync. Set auth.existingSecret or use database.existingSecretName.
+  See deploy/helm/simple-books/README.md.
+{{- end }}
 {{- else if .Values.database.externalUrl }}
   PostgreSQL (external URL in values — prefer database.existingSecretName for production).
 {{- else }}

@@ -130,9 +130,22 @@
     },
     "postgresql": {
       "type": "object",
-      "description": "Bundled Bitnami PostgreSQL (recommended for production).",
+      "description": "Bundled Bitnami PostgreSQL. GitOps/Argo CD: set auth.existingSecret (or database.existingSecretName); never leave auth.password empty. See deploy/helm/simple-books/README.md.",
       "properties": {
-        "enabled": { "type": "boolean" }
+        "enabled": { "type": "boolean" },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "password": {
+              "type": "string",
+              "description": "Only safe with helm upgrade + cluster lookup. GitOps must use existingSecret or database.existingSecretName."
+            },
+            "existingSecret": {
+              "type": "string",
+              "description": "Use Secret created by first Bitnami install ({release}-postgresql) or External Secrets; required for GitOps."
+            }
+          }
+        }
       }
     },
     "database": {

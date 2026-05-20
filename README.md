@@ -96,7 +96,10 @@ not via public email sign-up. The system is really intended to be used with OIDC
   and can be **lost** if the volume is deleted, the node fails, or the file is corrupted, or is manually edit and corrupts the SQLite WAL.
 - **PostgreSQL** (`DATABASE_URL=postgresql://…`) — use for any real-world install. Helm can
   bundle a Bitnami Postgres subchart (`postgresql.enabled`) or point at managed Postgres
-  (`database.externalUrl`). Migrations live in `drizzle/pg/`; SQLite migrations stay in `drizzle/`.
+  (`database.externalUrl`). **Argo CD / GitOps:** use an external Secret for Postgres credentials
+  (`postgresql.auth.existingSecret` or `database.existingSecretName`); see
+  [`deploy/helm/simple-books/README.md`](deploy/helm/simple-books/README.md). Migrations live in
+  `drizzle/pg/`; SQLite migrations stay in `drizzle/`.
 
 ```bash
 bun run db:generate       # SQLite schema changes

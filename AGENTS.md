@@ -34,4 +34,5 @@ Agent Skills in [`.agents/skills/`](.agents/skills/) (`skill-name/SKILL.md`):
 | Server fns | `src/server/*.functions.ts` |
 | Schema | `src/db/schema.ts` |
 | Layout | `src/components/layout/` |
+| Helm / K8s Postgres & GitOps | `deploy/helm/simple-books/README.md` |
 | Design doc | `DESIGN.md` ([DESIGN.md format](https://github.com/google-labs-code/design.md); `bun run design:lint`) |
