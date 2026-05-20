@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/radicand/simple-books/compare/v0.1.11...v0.1.12) (2026-05-20)
+
+
+### Bug Fixes
+
+* make it clear how to handle pgpass secrets in gitops ([d2811a3](https://github.com/radicand/simple-books/commit/d2811a3e4e7dfc4800fb0898bedb343160acdcaf))
+
 ## [0.1.11](https://github.com/radicand/simple-books/compare/v0.1.10...v0.1.11) (2026-05-19)
 
 

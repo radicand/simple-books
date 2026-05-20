@@ -2,8 +2,8 @@ apiVersion: v2
 name: simple-books
 description: Sole-proprietor bookkeeping made simple
 type: application
-version: 0.1.11
-appVersion: 0.1.11
+version: 0.1.12
+appVersion: 0.1.12
 kubeVersion: '>=1.25.0-0'
 keywords:
   - bookkeeping
