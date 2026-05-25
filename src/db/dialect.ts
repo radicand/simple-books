@@ -6,8 +6,7 @@ const DEFAULT_POSTGRES_PORT = '5432'
 
 /** Full database URL, deriving one from split Postgres env vars when needed. */
 export function databaseUrl(env: DatabaseEnv = process.env): string | undefined {
-  if (env.DATABASE_URL) return env.DATABASE_URL
-  if (!env.POSTGRES_HOST) return undefined
+  if (!env.POSTGRES_HOST) return env.DATABASE_URL
 
   const user = encodeURIComponent(env.POSTGRES_USER ?? DEFAULT_POSTGRES_USER)
   const password = env.POSTGRES_PASSWORD ? `:${encodeURIComponent(env.POSTGRES_PASSWORD)}` : ''
@@ -32,6 +31,6 @@ export function sqliteLibsqlUrl(url = databaseUrl()): string {
   return `file:${raw}`
 }
 
-export function migrationsFolder(): string {
-  return isPostgres() ? './drizzle/pg' : './drizzle'
+export function migrationsFolder(url = databaseUrl()): string {
+  return isPostgres(url) ? './drizzle/pg' : './drizzle'
 }

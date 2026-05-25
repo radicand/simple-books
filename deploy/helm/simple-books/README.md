@@ -4,6 +4,8 @@
 
 Bundled Postgres uses the Bitnami subchart. For production or GitOps, the `simplebooks` database user's password must come from a stable user-managed source. **Do not leave `postgresql.auth.password` empty** unless every deploy runs `helm upgrade` with live cluster API access (Helm `lookup` can reuse the existing Secret). **Argo CD, Flux, and other GitOps** render manifests without cluster lookup, so an empty password can produce a **new random password on every sync** while the database keeps the old one.
 
+When `postgresql.enabled: true`, the chart supplies split `POSTGRES_*` environment variables. The app gives `POSTGRES_HOST` precedence over `DATABASE_URL`, then builds the PostgreSQL URL from those split values. This prevents the Docker image's default SQLite `DATABASE_URL=/app/data/simple-books.db` from accidentally winning in GitOps deploys.
+
 ### GitOps / Argo CD (required)
 
 Use one of these stable credential sources before the first GitOps-managed deploy:

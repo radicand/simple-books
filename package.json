@@ -14,6 +14,10 @@
     "db:seed": "bun run scripts/seed.ts",
     "db:reset": "rm -rf data/simple-books.db data/simple-books.db-shm data/simple-books.db-wal && bun run db:migrate && bun run db:seed",
     "auth:secret": "bun -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "test": "bun run scripts/playwright-test.ts",
     "screenshots": "UPDATE_SCREENSHOTS=1 bun run test -- --grep @screenshots",
     "test:e2e": "bash scripts/e2e.sh",
@@ -36,6 +40,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/router-devtools": "^1.167.0",
