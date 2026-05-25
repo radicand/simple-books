@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.14](https://github.com/radicand/simple-books/compare/v0.1.13...v0.1.14) (2026-05-25)
+
+
+### Bug Fixes
+
+* align code to pass linter ([e24ea9b](https://github.com/radicand/simple-books/commit/e24ea9b219708233c5524c7572d65b772ceddb04))
+* don't apply sqlite when pg vars are specified ([94e04af](https://github.com/radicand/simple-books/commit/94e04affe15b60c3d2bd8179645f85c1caabad3f))
+
 ## [0.1.13](https://github.com/radicand/simple-books/compare/v0.1.12...v0.1.13) (2026-05-25)
 
 
