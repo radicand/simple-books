@@ -20,7 +20,7 @@ Use a credential source **outside** chart-managed auto-generation:
          userPasswordKey: password
    ```
 
-   Bitnami stops rendering a new Secret; the app still reads the same name via `simple-books.postgresql.secretName`.
+   Bitnami stops rendering a new Secret; the app reads the password from that Secret and connects to the bundled Postgres service.
 
 2. **Bundled Postgres — External Secrets (recommended for GitOps)**  
    Create a Secret (e.g. via External Secrets Operator) with keys `password` (and optionally `postgres-password`). Set `postgresql.auth.existingSecret` to that Secret name. Never commit the password in plain Helm values.

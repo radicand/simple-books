@@ -5,12 +5,12 @@ import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import postgres from 'postgres'
-import { isPostgres, sqliteLibsqlUrl } from './dialect'
+import { databaseUrl, isPostgres, sqliteLibsqlUrl } from './dialect'
 import { authSchema, businessSchema, fullSchema } from './tables'
 
 function createDb() {
   if (isPostgres()) {
-    const url = process.env.DATABASE_URL!
+    const url = databaseUrl()!
     const sql = postgres(url, { max: 10 })
     return drizzlePostgres(sql, { schema: fullSchema })
   }

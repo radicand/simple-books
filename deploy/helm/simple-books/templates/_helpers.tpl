@@ -54,20 +54,25 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{/*
-  Bitnami PostgreSQL Secret name (chart-created or auth.existingSecret).
+  Bitnami PostgreSQL service name.
 */}}
-{{- define "simple-books.postgresql.secretName" -}}
-{{- if .Values.postgresql.auth.existingSecret -}}
-{{- .Values.postgresql.auth.existingSecret -}}
-{{- else if .Values.postgresql.fullnameOverride -}}
+{{- define "simple-books.postgresql.fullname" -}}
+{{- if .Values.postgresql.fullnameOverride -}}
 {{- .Values.postgresql.fullnameOverride -}}
 {{- else -}}
 {{- printf "%s-postgresql" .Release.Name -}}
 {{- end -}}
 {{- end -}}
 
+{{/*
+  Bitnami PostgreSQL Secret name (chart-created or auth.existingSecret).
+*/}}
+{{- define "simple-books.postgresql.secretName" -}}
+{{- .Values.postgresql.auth.existingSecret | default (include "simple-books.postgresql.fullname" .) -}}
+{{- end -}}
+
 {{- define "simple-books.postgresql.host" -}}
-{{- include "simple-books.postgresql.secretName" . -}}
+{{- include "simple-books.postgresql.fullname" . -}}
 {{- end -}}
 
 {{- define "simple-books.postgresql.userPasswordKey" -}}
@@ -92,12 +97,18 @@ password
 - name: DATABASE_URL
   value: {{ .Values.database.externalUrl | quote }}
 {{- else if .Values.postgresql.enabled -}}
+- name: POSTGRES_HOST
+  value: {{ include "simple-books.postgresql.host" . | quote }}
+- name: POSTGRES_PORT
+  value: "5432"
+- name: POSTGRES_USER
+  value: {{ .Values.postgresql.auth.username | default "simplebooks" | quote }}
+- name: POSTGRES_DB
+  value: {{ .Values.postgresql.auth.database | default "simplebooks" | quote }}
 - name: POSTGRES_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ include "simple-books.postgresql.secretName" . }}
       key: {{ include "simple-books.postgresql.userPasswordKey" . }}
-- name: DATABASE_URL
-  value: {{ printf "postgresql://%s:$(POSTGRES_PASSWORD)@%s:5432/%s" (.Values.postgresql.auth.username | default "simplebooks") (include "simple-books.postgresql.host" .) (.Values.postgresql.auth.database | default "simplebooks") | quote }}
 {{- end -}}
 {{- end -}}

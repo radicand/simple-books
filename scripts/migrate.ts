@@ -6,12 +6,12 @@ import { migrate as migratePostgres } from 'drizzle-orm/postgres-js/migrator'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import postgres from 'postgres'
-import { isPostgres, migrationsFolder, sqliteLibsqlUrl } from '../src/db/dialect'
+import { databaseUrl, isPostgres, migrationsFolder, sqliteLibsqlUrl } from '../src/db/dialect'
 
 const folder = migrationsFolder()
 
 if (isPostgres()) {
-  const url = process.env.DATABASE_URL!
+  const url = databaseUrl()!
   const sql = postgres(url, { max: 1 })
   const db = drizzlePostgres(sql)
   await migratePostgres(db, { migrationsFolder: folder })

@@ -1,5 +1,5 @@
 import { defineConfig } from 'drizzle-kit'
-import { isPostgres, sqliteLibsqlUrl } from './src/db/dialect'
+import { databaseUrl, isPostgres, sqliteLibsqlUrl } from './src/db/dialect'
 
 const postgres = isPostgres()
 
@@ -10,6 +10,6 @@ export default defineConfig({
     : ['./src/db/schema.sqlite.ts', './src/db/auth-schema.sqlite.ts'],
   dialect: postgres ? 'postgresql' : 'sqlite',
   dbCredentials: postgres
-    ? { url: process.env.DATABASE_URL! }
+    ? { url: databaseUrl()! }
     : { url: sqliteLibsqlUrl() },
 })
