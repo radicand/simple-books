@@ -9,12 +9,11 @@ import { sql } from 'drizzle-orm'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import postgres from 'postgres'
-import { databaseUrl, isPostgres, sqliteLibsqlUrl } from '../src/db/dialect'
-import { chartAccounts, mileageRates, settings } from '../src/db/schema'
+import { isPostgres, requireDatabaseUrl, sqliteLibsqlUrl } from '../src/db/dialect'
 
 function createSeedDb() {
   if (isPostgres()) {
-    const sqlClient = postgres(databaseUrl()!, { max: 1 })
+    const sqlClient = postgres(requireDatabaseUrl(), { max: 1 })
     return { db: drizzlePostgres(sqlClient), close: () => sqlClient.end() }
   }
   const url = sqliteLibsqlUrl()

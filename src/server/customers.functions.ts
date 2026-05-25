@@ -54,6 +54,8 @@ export const updateCustomer = createServerFn({ method: 'POST' }).middleware([req
     const { db } = await import('~/db/client')
     const { customers } = await import('~/db/schema')
     const { eq } = await import('drizzle-orm')
+    const id = data.id
+    if (!id) throw new Error('Customer id is required.')
     await db
       .update(customers)
       .set({
@@ -61,6 +63,6 @@ export const updateCustomer = createServerFn({ method: 'POST' }).middleware([req
         email: data.email?.trim() || null,
         notes: data.notes?.trim() || null,
       })
-      .where(eq(customers.id, data.id!))
+      .where(eq(customers.id, id))
     return { ok: true }
   })

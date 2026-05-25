@@ -13,6 +13,11 @@ function referenceDateISO(): string | undefined {
   return undefined
 }
 
+function parseISOParts(iso: string): [number, number, number] {
+  const [year = '0', month = '1', day = '1'] = iso.split('-')
+  return [Number(year), Number(month), Number(day)]
+}
+
 export function todayISO(): string {
   const ref = referenceDateISO()
   if (ref) return ref
@@ -27,23 +32,23 @@ export function todayISO(): string {
 export function referenceNow(): Date {
   const ref = referenceDateISO()
   if (ref) {
-    const [y, m, d] = ref.split('-').map(Number)
-    return new Date(Date.UTC(y!, m! - 1, d!, 17, 0, 0))
+    const [y, m, d] = parseISOParts(ref)
+    return new Date(Date.UTC(y, m - 1, d, 17, 0, 0))
   }
   return new Date()
 }
 
 export function addDaysISO(iso: string, days: number): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  const dt = new Date(Date.UTC(y!, m! - 1, d!))
+  const [y, m, d] = parseISOParts(iso)
+  const dt = new Date(Date.UTC(y, m - 1, d))
   dt.setUTCDate(dt.getUTCDate() + days)
   return dt.toISOString().slice(0, 10)
 }
 
 export function fmtDate(iso: string): string {
   if (!iso) return ''
-  const [y, m, d] = iso.split('-').map(Number)
-  const dt = new Date(Date.UTC(y!, m! - 1, d!))
+  const [y, m, d] = parseISOParts(iso)
+  const dt = new Date(Date.UTC(y, m - 1, d))
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
@@ -54,8 +59,8 @@ export function fmtDate(iso: string): string {
 
 export function fmtDateLong(iso: string): string {
   if (!iso) return ''
-  const [y, m, d] = iso.split('-').map(Number)
-  const dt = new Date(Date.UTC(y!, m! - 1, d!))
+  const [y, m, d] = parseISOParts(iso)
+  const dt = new Date(Date.UTC(y, m - 1, d))
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     year: 'numeric',

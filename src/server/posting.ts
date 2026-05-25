@@ -46,8 +46,7 @@ export async function postJournalSync(
     source: args.source,
     sourceId: args.sourceId ?? null,
   })
-  for (let i = 0; i < args.lines.length; i++) {
-    const l = args.lines[i]!
+  for (const [i, l] of args.lines.entries()) {
     await tx.insert(journalLines).values({
       id: newId('jl'),
       entryId,

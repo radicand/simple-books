@@ -39,8 +39,8 @@ function InvoiceDetail() {
     try {
       await voidInvoice({ data: { id: inv.id } })
       router.invalidate()
-    } catch (e: any) {
-      alert(e?.message ?? String(e))
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : String(e))
     }
   }
 

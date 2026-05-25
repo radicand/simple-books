@@ -107,7 +107,7 @@ function CashFlowPage() {
           ) : (
             <>
               <div className="sm:hidden divide-y divide-[var(--color-border)]">
-                {data.inflows.map((r: any) => (
+                {data.inflows.map((r) => (
                   <div key={r.id} className="px-4 py-4 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -145,7 +145,7 @@ function CashFlowPage() {
                     </tr>
                   </THead>
                   <tbody>
-                    {data.inflows.map((r: any) => (
+                    {data.inflows.map((r) => (
                       <Tr key={r.id}>
                         <Td className="text-[var(--color-ink-soft)]">{fmtDate(r.date)}</Td>
                         <Td>{r.customerName ?? '—'}</Td>

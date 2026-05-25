@@ -79,7 +79,10 @@ export async function runSoleProprietorFlow(
   await expect(page.getByText(/invoice 2026-/i)).toBeVisible()
   await expect(visibleText(page, formatUsd(INVOICE_LINE_CENTS)).first()).toBeVisible()
 
-  const invoiceId = page.url().split('/invoices/')[1]!.split(/[/?#]/)[0]!
+  const invoicePath = new URL(page.url()).pathname.split('/invoices/')[1]
+  if (!invoicePath) throw new Error('Expected invoice detail URL.')
+  const invoiceId = invoicePath.split('/')[0]
+  if (!invoiceId) throw new Error('Expected invoice id in URL.')
   await page.goto(`/invoices/${invoiceId}/edit`)
   await expect(page.locator('#i-memo')).toBeVisible()
   const memo = page.locator('#i-memo')

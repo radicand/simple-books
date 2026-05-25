@@ -13,7 +13,6 @@ import {
   Money,
   EmptyState,
   Icon,
-  Badge,
 } from '~/components/ui'
 import {
   listMileage,

@@ -25,6 +25,13 @@ import { PendingFileField } from '~/components/pending-file-field'
 import { uploadPendingAttachment } from '~/components/attachment-upload'
 
 const searchSchema = z.object({ invoiceId: z.string().optional() })
+type ReceiptMethod = 'cash' | 'check' | 'card' | 'transfer' | 'other'
+type OpenInvoice = {
+  id: string
+  number: string
+  issuedOn: string
+  balanceCents: number
+}
 
 export const Route = createFileRoute('/_app/receipts/new')({
   validateSearch: searchSchema,
@@ -39,10 +46,10 @@ function NewReceipt() {
   const router = useRouter()
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? '')
   const [invoiceId, setInvoiceId] = useState<string>(search.invoiceId ?? '')
-  const [openInvoices, setOpenInvoices] = useState<Array<any>>([])
+  const [openInvoices, setOpenInvoices] = useState<OpenInvoice[]>([])
   const [receivedOn, setReceivedOn] = useState(todayISO())
   const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState<'cash' | 'check' | 'card' | 'transfer' | 'other'>('transfer')
+  const [method, setMethod] = useState<ReceiptMethod>('transfer')
   const [memo, setMemo] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -113,8 +120,8 @@ function NewReceipt() {
       } else {
         navigate({ to: '/receipts' })
       }
-    } catch (err: any) {
-      setError(err?.message ?? String(err))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -193,7 +200,11 @@ function NewReceipt() {
                 />
               </Field>
               <Field label="Method" htmlFor="r-method" required>
-                <Select id="r-method" value={method} onChange={(e) => setMethod(e.target.value as any)}>
+                <Select
+                  id="r-method"
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value as ReceiptMethod)}
+                >
                   <option value="transfer">Bank transfer</option>
                   <option value="check">Check</option>
                   <option value="card">Card</option>

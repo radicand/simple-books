@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Field, Input, Money } from '~/components/ui'
 import { FormGrid } from '~/components/form-grid'
 import { PendingFileField } from '~/components/pending-file-field'
@@ -39,7 +39,7 @@ export function MileageTripForm({
   const [busy, setBusy] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
 
-  async function loadRateForDate(date: string) {
+  const loadRateForDate = useCallback(async (date: string) => {
     try {
       const r = await getMileageRateForDate({ data: { tripDate: date } })
       setRateCents(r.centsPerMile)
@@ -47,11 +47,11 @@ export function MileageTripForm({
     } catch {
       /* keep current rate */
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (initial?.tripDate) void loadRateForDate(initial.tripDate)
-  }, [initial?.tripDate])
+  }, [initial?.tripDate, loadRateForDate])
 
   const computed = useMemo(() => {
     try {

@@ -3,7 +3,6 @@ import { createContext, useContext, useState } from 'react'
 import {
   PageHeader,
   Card,
-  CardBody,
   Button,
   Field,
   Input,
@@ -169,8 +168,8 @@ function ServiceDialog({
         await createService({ data: { name, unit, rate, description } })
       }
       onSaved()
-    } catch (err: any) {
-      setError(err?.message ?? String(err))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }

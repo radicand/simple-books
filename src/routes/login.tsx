@@ -48,7 +48,7 @@ function LoginPage() {
         const res = await authClient.signUp.email({
           email,
           password,
-          name: name || email.split('@')[0]!,
+          name: name || email.split('@')[0] || email,
         })
         if (res.error) throw new Error(res.error.message ?? 'Sign-up failed.')
       } else {

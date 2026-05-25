@@ -12,7 +12,7 @@ export const getBalanceSheet = createServerFn({ method: 'GET' }).middleware([req
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
     const { chartAccounts, journalEntries, journalLines } = await import('~/db/schema')
-    const { and, asc, eq, lte, sql } = await import('drizzle-orm')
+    const { asc, eq, sql } = await import('drizzle-orm')
 
     const asOf = data.asOf || todayISO()
 

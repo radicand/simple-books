@@ -138,8 +138,8 @@ function Section({
         {title}
       </div>
       <ul className="list-none">
-        {rows.map((r, i) => (
-          <Row key={i} label={r.label} cents={r.cents} muted={r.muted} />
+        {rows.map((r) => (
+          <Row key={r.label} label={r.label} cents={r.cents} muted={r.muted} />
         ))}
       </ul>
       <div className="border-t border-[var(--color-border)] mx-6" />

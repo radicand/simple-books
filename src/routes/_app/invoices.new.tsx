@@ -13,6 +13,7 @@ import {
 import { FormGrid } from '~/components/form-grid'
 import { FormActions } from '~/components/form-actions'
 import {
+  createInvoiceLineDraft,
   InvoiceLineEditor,
   type InvoiceLineDraft,
 } from '~/components/invoice-line-editor'
@@ -40,7 +41,7 @@ function NewInvoicePage() {
   const [dueOn, setDueOn] = useState(addDaysISO(todayISO(), 14))
   const [memo, setMemo] = useState('')
   const [lines, setLines] = useState<InvoiceLineDraft[]>([
-    { serviceProductId: null, description: '', quantity: '1', unitPrice: '' },
+    createInvoiceLineDraft(),
   ])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -164,7 +165,7 @@ function NewInvoicePage() {
             onAdd={() =>
               setLines((rows) => [
                 ...rows,
-                { serviceProductId: null, description: '', quantity: '1', unitPrice: '' },
+                createInvoiceLineDraft(),
               ])
             }
             onRemove={(i) => setLines((rows) => rows.filter((_, idx) => idx !== i))}

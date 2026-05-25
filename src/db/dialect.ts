@@ -17,6 +17,14 @@ export function databaseUrl(env: DatabaseEnv = process.env): string | undefined 
   return `postgresql://${user}${password}@${host}:${port}/${db}`
 }
 
+export function requireDatabaseUrl(env: DatabaseEnv = process.env): string {
+  const url = databaseUrl(env)
+  if (!url) {
+    throw new Error('DATABASE_URL or POSTGRES_HOST is required for PostgreSQL.')
+  }
+  return url
+}
+
 /** True when the configured database points at PostgreSQL (recommended for production). */
 export function isPostgres(url = databaseUrl()): boolean {
   if (!url) return false

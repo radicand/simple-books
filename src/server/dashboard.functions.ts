@@ -38,7 +38,8 @@ export const getDashboard = createServerFn({ method: 'GET' }).middleware([requir
       )
       .groupBy(chartAccounts.normal, chartAccounts.type)
     if (!rows.length) return 0
-    const r = rows[0]!
+    const r = rows[0]
+    if (!r) return 0
     return r.normal === 'debit'
       ? Number(r.sumDr) - Number(r.sumCr)
       : Number(r.sumCr) - Number(r.sumDr)

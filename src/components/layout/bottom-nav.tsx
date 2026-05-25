@@ -14,7 +14,7 @@ export function BottomNav({
   const path = useRouterState({ select: (s) => s.location.pathname })
   const [moreOpen, setMoreOpen] = useState(false)
   const moreActive = MORE_NAV.some(
-    (i) => path === i.to || path.startsWith(i.to + '/'),
+    (i) => path === i.to || path.startsWith(`${i.to}/`),
   )
 
   return (
@@ -25,7 +25,7 @@ export function BottomNav({
       >
         <div className="grid grid-cols-5 h-[var(--nav-height-compact,56px)]">
           {BOTTOM_NAV.map((item) => {
-            const active = path === item.to || path.startsWith(item.to + '/')
+            const active = path === item.to || path.startsWith(`${item.to}/`)
             return (
               <Link
                 key={item.to}
@@ -105,7 +105,7 @@ export function BottomNav({
             <nav className="p-3 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto">
               {MORE_NAV.map((item) => {
                 const active =
-                  path === item.to || path.startsWith(item.to + '/')
+                  path === item.to || path.startsWith(`${item.to}/`)
                 return (
                   <NavLink
                     key={item.to}

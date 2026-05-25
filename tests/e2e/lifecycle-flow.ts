@@ -1,7 +1,6 @@
 import { expect, type Page } from '@playwright/test'
-import { E2E_REFERENCE_DATE } from '../reference-date'
 import { formatUsd, mileageReimbursementCents } from './helpers/ledger'
-import { openModal, signIn, signOut, visibleText } from './helpers/ui'
+import { signIn, signOut, visibleText } from './helpers/ui'
 
 const VOID_INVOICE_CENTS = 15_000
 const RATE_CHECK_MILES = 10

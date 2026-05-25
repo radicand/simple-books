@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Field, Icon } from '~/components/ui'
+import { Field, Icon } from '~/components/ui'
 
 type SourceType = 'invoice' | 'cash_receipt' | 'mileage'
 
@@ -17,31 +17,24 @@ export function AttachmentUpload({
   const [file, setFile] = useState<File | null>(null)
   const [status, setStatus] = useState<string | null>(null)
 
-  async function upload(selected: File, id: string) {
-    const form = new FormData()
-    form.append('file', selected)
-    form.append('sourceType', sourceType)
-    form.append('sourceId', id)
-    const res = await fetch('/api/attachments/upload', {
-      method: 'POST',
-      body: form,
-      credentials: 'include',
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      throw new Error(body.message ?? 'Upload failed.')
-    }
-  }
-
   return (
     <Field label={label} hint={hint}>
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp,application/pdf"
         className="block w-full text-sm text-[var(--color-ink-soft)] file:mr-3 file:py-2 file:px-3 file:rounded-[10px] file:border file:border-[var(--color-border-strong)] file:bg-[var(--color-surface)] file:text-[var(--color-ink)] file:font-medium file:cursor-pointer min-h-11"
-        onChange={(e) => {
-          setFile(e.target.files?.[0] ?? null)
+        onChange={async (e) => {
+          const selected = e.target.files?.[0] ?? null
+          setFile(selected)
           setStatus(null)
+          if (!selected || !sourceId) return
+          try {
+            setStatus('Uploading...')
+            await uploadPendingAttachment(selected, sourceType, sourceId)
+            setStatus('Uploaded.')
+          } catch (err: unknown) {
+            setStatus(err instanceof Error ? err.message : String(err))
+          }
         }}
       />
       {file && !sourceId && (

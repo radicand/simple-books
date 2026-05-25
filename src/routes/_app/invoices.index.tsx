@@ -64,7 +64,7 @@ function InvoicesPage() {
               </tr>
             </THead>
             <tbody>
-              {invoices.map((i: any) => (
+              {invoices.map((i) => (
                 <Tr
                   key={i.id}
                   className="cursor-pointer"

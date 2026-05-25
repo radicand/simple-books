@@ -14,7 +14,9 @@ function decodeIdTokenPayload(idToken: string): Record<string, unknown> | null {
   try {
     const parts = idToken.split('.')
     if (parts.length < 2) return null
-    const json = Buffer.from(parts[1]!, 'base64url').toString('utf8')
+    const payload = parts[1]
+    if (!payload) return null
+    const json = Buffer.from(payload, 'base64url').toString('utf8')
     return JSON.parse(json) as Record<string, unknown>
   } catch {
     return null

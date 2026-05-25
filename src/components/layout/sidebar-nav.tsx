@@ -33,7 +33,7 @@ export function SidebarNav({
             <div className="flex flex-col gap-0.5">
               {group.items.map((item) => {
                 const active =
-                  path === item.to || path.startsWith(item.to + '/')
+                  path === item.to || path.startsWith(`${item.to}/`)
                 return (
                   <NavLink
                     key={item.to}

@@ -10,10 +10,24 @@ import {
 import { parseDollarsToCents, parseQuantityToMicro } from '~/lib/money'
 
 export type InvoiceLineDraft = {
+  clientId: string
   serviceProductId: string | null
   description: string
   quantity: string
   unitPrice: string
+}
+
+export function createInvoiceLineDraft(
+  patch: Partial<Omit<InvoiceLineDraft, 'clientId'>> = {},
+): InvoiceLineDraft {
+  return {
+    clientId: crypto.randomUUID(),
+    serviceProductId: null,
+    description: '',
+    quantity: '1',
+    unitPrice: '',
+    ...patch,
+  }
 }
 
 function lineAmountCents(l: InvoiceLineDraft): number {
@@ -52,7 +66,7 @@ export function InvoiceLineEditor({
     if (!svc) return
     onChange(i, {
       serviceProductId: svc.id,
-      description: lines[i]!.description || svc.name,
+      description: lines[i]?.description || svc.name,
       unitPrice: (svc.rateCents / 100).toFixed(2),
     })
   }
@@ -71,7 +85,7 @@ export function InvoiceLineEditor({
         {lines.map((l, i) => {
           const amount = lineAmountCents(l)
           return (
-            <div key={i} className="p-4 space-y-4 bg-[var(--color-surface)]">
+            <div key={l.clientId} className="p-4 space-y-4 bg-[var(--color-surface)]">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[12px] font-medium uppercase tracking-wider text-[var(--color-ink-faint)]">
                   Line {i + 1}
@@ -169,7 +183,7 @@ export function InvoiceLineEditor({
             {lines.map((l, i) => {
               const amount = lineAmountCents(l)
               return (
-                <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                <tr key={l.clientId} className="border-b border-[var(--color-border)] last:border-0">
                   <td className="px-4 py-2 align-top min-w-[140px]">
                     <Select
                       value={l.serviceProductId ?? ''}

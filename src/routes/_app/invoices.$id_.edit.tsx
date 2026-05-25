@@ -13,6 +13,7 @@ import {
 import { FormGrid } from '~/components/form-grid'
 import { FormActions } from '~/components/form-actions'
 import {
+  createInvoiceLineDraft,
   InvoiceLineEditor,
   type InvoiceLineDraft,
 } from '~/components/invoice-line-editor'
@@ -54,7 +55,7 @@ function EditInvoicePage() {
   const [dueOn, setDueOn] = useState(inv.dueOn)
   const [memo, setMemo] = useState(inv.memo ?? '')
   const [lines, setLines] = useState<InvoiceLineDraft[]>(() =>
-    inv.lines.map((l) => ({
+    inv.lines.map((l) => createInvoiceLineDraft({
       serviceProductId: l.serviceProductId,
       description: l.description,
       quantity: microToDecimal(l.quantityMicro, 6),
@@ -224,7 +225,7 @@ function EditInvoicePage() {
             onAdd={() =>
               setLines((rows) => [
                 ...rows,
-                { serviceProductId: null, description: '', quantity: '1', unitPrice: '' },
+                createInvoiceLineDraft(),
               ])
             }
             onRemove={(i) => setLines((rows) => rows.filter((_, idx) => idx !== i))}

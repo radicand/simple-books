@@ -24,11 +24,11 @@ export function parseDollarsToCents(input: string): number {
   if (!/^-?\d+(\.\d{0,2})?$/.test(s)) {
     throw new Error('Invalid amount; use dollars and up to 2 decimals.')
   }
-  const [whole, frac = ''] = s.split('.')
-  const sign = whole!.startsWith('-') ? -1 : 1
-  const wholeAbs = whole!.replace('-', '')
+  const [whole = '0', frac = ''] = s.split('.')
+  const sign = whole.startsWith('-') ? -1 : 1
+  const wholeAbs = whole.replace('-', '')
   const cents =
-    Number(wholeAbs) * 100 + Number((frac + '00').slice(0, 2) || '0')
+    Number(wholeAbs) * 100 + Number(`${frac}00`.slice(0, 2) || '0')
   return sign * cents
 }
 

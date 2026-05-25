@@ -130,8 +130,8 @@ function CustomerDialog({
         await createCustomer({ data: { name, email, notes } })
       }
       onSaved()
-    } catch (err: any) {
-      setError(err?.message ?? String(err))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }

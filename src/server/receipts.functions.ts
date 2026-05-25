@@ -157,18 +157,20 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
             t: sql<number>`COALESCE(SUM(${cashReceipts.amountCents}),0)`,
           })
           .from(cashReceipts)
-          .where(eq(cashReceipts.invoiceId, invoiceId!))
+          .where(eq(cashReceipts.invoiceId, invoiceId))
         const balanceDue = inv.subtotalCents - Number(paidBefore?.t ?? 0)
         if (balanceDue <= 0) throw new Error('Invoice has no balance due.')
         if (amountCents > balanceDue)
           throw new Error('Payment exceeds invoice balance.')
       }
 
+      if (!invoiceId) throw new Error('Invoice is required.')
+
       await tx.insert(cashReceipts).values({
         id: receiptId,
         receivedOn: data.receivedOn,
         customerId: data.customerId,
-        invoiceId: invoiceId!,
+        invoiceId,
         amountCents,
         method: data.method,
         memo: data.memo?.trim() || null,
@@ -185,7 +187,7 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
         ],
       })
 
-      await recalcInvoiceStatusSync(tx, invoiceId!)
+      await recalcInvoiceStatusSync(tx, invoiceId)
     })
 
     return { id: receiptId, autoInvoice: createdInvoice }
@@ -315,8 +317,8 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
-    const { cashReceipts, invoices } = await import('~/db/schema')
-    const { eq, sql } = await import('drizzle-orm')
+    const { cashReceipts } = await import('~/db/schema')
+    const { eq } = await import('drizzle-orm')
 
     const [r] = await db
       .select()

@@ -13,6 +13,9 @@ const oidcConfigured =
   !!process.env.OIDC_ISSUER_URL &&
   !!process.env.OIDC_CLIENT_ID &&
   !!process.env.OIDC_CLIENT_SECRET
+const oidcIssuerUrl = process.env.OIDC_ISSUER_URL?.replace(/\/$/, '')
+const oidcClientId = process.env.OIDC_CLIENT_ID
+const oidcClientSecret = process.env.OIDC_CLIENT_SECRET
 
 /** Case-insensitive email lookup for OIDC ↔ local account linking. */
 async function findUserByEmailInsensitive(
@@ -38,22 +41,23 @@ async function resolveOidcLinkEmail(oidcEmail: string): Promise<string> {
   if (existing) return existing.email.toLowerCase()
 
   const owners = await db.select({ email: user.email }).from(user)
-  if (owners.length === 1) return owners[0]!.email.toLowerCase()
+  const owner = owners[0]
+  if (owners.length === 1 && owner) return owner.email.toLowerCase()
 
   return normalized
 }
 
 const plugins = []
 
-if (oidcConfigured) {
+if (oidcConfigured && oidcIssuerUrl && oidcClientId && oidcClientSecret) {
   plugins.push(
     genericOAuth({
       config: [
         {
           providerId: 'oidc',
-          clientId: process.env.OIDC_CLIENT_ID!,
-          clientSecret: process.env.OIDC_CLIENT_SECRET!,
-          discoveryUrl: `${process.env.OIDC_ISSUER_URL!.replace(/\/$/, '')}/.well-known/openid-configuration`,
+          clientId: oidcClientId,
+          clientSecret: oidcClientSecret,
+          discoveryUrl: `${oidcIssuerUrl}/.well-known/openid-configuration`,
           redirectURI:
             process.env.OIDC_REDIRECT_URI ||
             `${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/oauth2/callback/oidc`,

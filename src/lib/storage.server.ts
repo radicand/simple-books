@@ -25,7 +25,7 @@ export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number]
 function localPath(storageKey: string): string {
   assertSafeStorageKey(storageKey)
   const path = resolve(UPLOAD_DIR, storageKey)
-  if (!path.startsWith(UPLOAD_DIR + '/') && path !== UPLOAD_DIR) {
+  if (!path.startsWith(`${UPLOAD_DIR}/`) && path !== UPLOAD_DIR) {
     throw new Error('Invalid storage path.')
   }
   return path
@@ -45,6 +45,12 @@ function s3Client() {
     },
     forcePathStyle: true,
   })
+}
+
+function s3Bucket(): string {
+  const bucket = process.env.S3_BUCKET?.trim()
+  if (!bucket) throw new Error('S3_BUCKET is required when S3 storage is enabled.')
+  return bucket
 }
 
 export function validateUpload(mimeType: string, sizeBytes: number) {
@@ -113,7 +119,7 @@ export async function putObject(
   if (s3Enabled()) {
     await s3Client().send(
       new PutObjectCommand({
-        Bucket: process.env.S3_BUCKET!,
+        Bucket: s3Bucket(),
         Key: storageKey,
         Body: body,
         ContentType: mimeType,
@@ -131,7 +137,7 @@ export async function getObjectBytes(storageKey: string): Promise<Uint8Array> {
   if (s3Enabled()) {
     const res = await s3Client().send(
       new GetObjectCommand({
-        Bucket: process.env.S3_BUCKET!,
+        Bucket: s3Bucket(),
         Key: storageKey,
       }),
     )
@@ -150,7 +156,7 @@ export async function deleteObject(storageKey: string): Promise<void> {
   if (s3Enabled()) {
     await s3Client().send(
       new DeleteObjectCommand({
-        Bucket: process.env.S3_BUCKET!,
+        Bucket: s3Bucket(),
         Key: storageKey,
       }),
     )
@@ -174,7 +180,7 @@ export async function presignedGetUrl(
   return getSignedUrl(
     s3Client(),
     new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET!,
+      Bucket: s3Bucket(),
       Key: storageKey,
     }),
     { expiresIn },

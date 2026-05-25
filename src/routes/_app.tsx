@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { AppShell } from '~/components/layout/app-shell'
 import { getSession } from '~/lib/auth.functions'
 
