@@ -1,14 +1,15 @@
 # Example overlay for Argo CD / Flux. Copy to your repo; do not commit real secrets.
 #
-# Option A — reuse the Secret Bitnami created on first helm install (release name = simple-books):
+# Option A — bundled Postgres with a stable user-managed password Secret.
+# Create/sync Secret simple-books-postgresql-auth with key "password" before deploying.
 postgresql:
   enabled: true
   auth:
-    existingSecret: simple-books-postgresql
+    existingSecret: simple-books-postgresql-auth
     secretKeys:
       userPasswordKey: password
 
-# Option B — managed Postgres + External Secrets (preferred for production):
+# Option B — managed Postgres + External Secrets:
 # postgresql:
 #   enabled: false
 # database:

@@ -130,7 +130,7 @@
     },
     "postgresql": {
       "type": "object",
-      "description": "Bundled Bitnami PostgreSQL. GitOps/Argo CD: set auth.existingSecret (or database.existingSecretName); never leave auth.password empty. See deploy/helm/simple-books/README.md.",
+      "description": "Bundled Bitnami PostgreSQL. Production/GitOps must use a stable user password source: auth.existingSecret, a non-committed auth.password, or database.existingSecretName. See deploy/helm/simple-books/README.md.",
       "properties": {
         "enabled": { "type": "boolean" },
         "auth": {
@@ -138,11 +138,11 @@
           "properties": {
             "password": {
               "type": "string",
-              "description": "Only safe with helm upgrade + cluster lookup. GitOps must use existingSecret or database.existingSecretName."
+              "description": "Only leave empty for interactive helm upgrade with cluster lookup. Production/GitOps must provide a stable password through this field, existingSecret, or database.existingSecretName."
             },
             "existingSecret": {
               "type": "string",
-              "description": "Use Secret created by first Bitnami install ({release}-postgresql) or External Secrets; required for GitOps."
+              "description": "Stable Secret containing the Postgres user password key (External Secrets/user-managed Secret preferred); required for GitOps unless auth.password or database.existingSecretName is set."
             }
           }
         }

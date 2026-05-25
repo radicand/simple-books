@@ -92,16 +92,18 @@ persistence:
 # Recommended for production: durable Postgres instead of SQLite on a PVC (data loss risk on
 # node loss, failed mounts, or accidental PVC deletion). Set postgresql.enabled or database.externalUrl.
 #
-# GitOps (Argo CD / Flux): REQUIRED — do not rely on empty auth.password (new password every sync).
-# Use postgresql.auth.existingSecret (Bitnami Secret from first install, or External Secrets) or
-# database.existingSecretName. See deploy/helm/simple-books/README.md.
+# GitOps / production: REQUIRED — use a stable user password source.
+# Empty auth.password relies on Helm lookup and can render a new password every GitOps sync.
+# Use postgresql.auth.existingSecret (External Secrets/user-managed Secret), a non-committed
+# postgresql.auth.password value, or database.existingSecretName for managed Postgres.
+# See deploy/helm/simple-books/README.md.
 postgresql:
   enabled: false
   auth:
     username: simplebooks
-    # Empty only for helm upgrade with cluster API (lookup reuses Secret). Not for GitOps.
+    # Empty only for interactive helm upgrade with cluster API (lookup reuses Secret). Not for GitOps.
     password: ""
-    # Pin an existing Secret (e.g. {release-name}-postgresql after first Bitnami install, or ESO):
+    # Pin a stable password Secret with key "password" (External Secrets/user-managed Secret preferred):
     # existingSecret: ""
     # secretKeys:
     #   userPasswordKey: password

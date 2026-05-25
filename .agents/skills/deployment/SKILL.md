@@ -63,9 +63,10 @@ helm template sb deploy/helm/simple-books \
 - **Production:** set `postgresql.enabled: true` or `database.existingSecretName` for managed
   Postgres (`DATABASE_URL` key). Plain `database.externalUrl` works but stores the URL in Helm
   values. SQLite on a PVC is not durable.
-- **GitOps (Argo CD / Flux):** empty `postgresql.auth.password` rotates the DB password every
-  sync (no Helm cluster lookup). **Required:** `postgresql.auth.existingSecret` (reuse Bitnami
-  Secret `{release}-postgresql` from first install, or External Secrets) **or**
+- **GitOps / production:** the Postgres user password must come from a stable source.
+  Empty `postgresql.auth.password` can render a new password every sync (no Helm cluster
+  lookup). **Required:** `postgresql.auth.existingSecret` (External Secrets/user-managed
+  Secret preferred), a non-committed `postgresql.auth.password`, **or**
   `database.existingSecretName`. See `deploy/helm/simple-books/README.md`.
 - Run `helm dependency update deploy/helm/simple-books` before lint/package when using Postgres subchart.
 - Set `BETTER_AUTH_URL` to the public URL; OIDC redirect must match.
