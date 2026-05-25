@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.13](https://github.com/radicand/simple-books/compare/v0.1.12...v0.1.13) (2026-05-25)
+
+
+### Bug Fixes
+
+* helm deploy should not require coddling of pgpass ([70d8383](https://github.com/radicand/simple-books/commit/70d8383802a72584b7b6495509152e51dcc9d439))
+* share gitops guidance to set a stable pass for pg and not rely on chart autogen ([8ac8d20](https://github.com/radicand/simple-books/commit/8ac8d2051c6d138a5fb848f1fb9aee957dd2921d))
+
 ## [0.1.12](https://github.com/radicand/simple-books/compare/v0.1.11...v0.1.12) (2026-05-20)
 
 
