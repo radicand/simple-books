@@ -19,7 +19,7 @@ jobs:
     outputs:
       version: ${{ steps.pw.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: pw
         name: Read @playwright/test version
         run: |
@@ -32,7 +32,7 @@ jobs:
       NODE_ENV: production
       BETTER_AUTH_SECRET: ci-test-secret-not-for-production-use-only-32chars
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -118,7 +118,7 @@ jobs:
       BETTER_AUTH_SECRET: ci-test-secret-not-for-production-use-only-32chars
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install unzip for setup-bun
         run: |
