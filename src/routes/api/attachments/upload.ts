@@ -1,21 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { auth } from '~/lib/auth'
 import {
   assertSafeSourceId,
   buildStorageKey,
 } from '~/lib/attachment-security'
 import { newId } from '~/lib/ids'
-import {
-  ALLOWED_MIME_TYPES,
-  putObject,
-  validateUploadBytes,
-  type AllowedMimeType,
-} from '~/lib/storage.server'
 
 export const Route = createFileRoute('/api/attachments/upload')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { auth } = await import('~/lib/auth')
         const session = await auth.api.getSession({ headers: request.headers })
         if (!session) {
           return new Response('Unauthorized', { status: 401 })
@@ -54,8 +48,13 @@ export const Route = createFileRoute('/api/attachments/upload')({
             sourceId,
           )
 
+          const {
+            ALLOWED_MIME_TYPES,
+            putObject,
+            validateUploadBytes,
+          } = await import('~/lib/storage.server')
           const declared = (file.type || 'application/octet-stream') as string
-          if (!ALLOWED_MIME_TYPES.includes(declared as AllowedMimeType)) {
+          if (!(ALLOWED_MIME_TYPES as readonly string[]).includes(declared)) {
             throw new Error('Only JPEG, PNG, WebP, and PDF files are allowed.')
           }
 
