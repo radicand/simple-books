@@ -6,7 +6,7 @@ import {
   parseDollarsToCents,
   parseQuantityToMicro,
 } from '~/lib/money'
-import { todayISO, isoYear } from '~/lib/date'
+import { isoYear } from '~/lib/date'
 import {
   nextInvoiceNumber,
   reverseInvoiceJournal,
@@ -228,11 +228,20 @@ export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requ
     }
 
     await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select({
+          subtotalCents: invoices.subtotalCents,
+          issuedOn: invoices.issuedOn,
+        })
+        .from(invoices)
+        .where(eq(invoices.id, data.id))
+      if (!current) throw new Error('Invoice not found.')
+
       await reverseInvoiceJournal(tx, {
         invoiceId: inv.id,
         invoiceNumber: inv.number,
-        subtotalCents: inv.subtotalCents,
-        date: inv.issuedOn,
+        subtotalCents: current.subtotalCents,
+        date: current.issuedOn,
       })
       await tx.delete(invoiceLines).where(eq(invoiceLines.invoiceId, data.id))
       for (const l of linesParsed) {
@@ -273,8 +282,6 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
     if (!inv) throw new Error('Invoice not found.')
     if (inv.status === 'void') return { ok: true }
 
-    const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
-    await deleteAttachmentsForSource('invoice', data.id)
     await db.transaction(async (tx) => {
       const [receiptCount] = await tx
         .select({ c: sql<number>`COUNT(*)` })
@@ -283,13 +290,35 @@ export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requir
       if (Number(receiptCount?.c ?? 0) > 0) {
         throw new Error('Cannot void an invoice with payments. Delete the payments first.')
       }
+      const { attachments } = await import('~/db/schema')
+      const { and } = await import('drizzle-orm')
+      const { deleteObject } = await import('~/lib/storage.server')
+      const attachRows = await tx
+        .select()
+        .from(attachments)
+        .where(
+          and(
+            eq(attachments.sourceType, 'invoice'),
+            eq(attachments.sourceId, data.id),
+          ),
+        )
+      for (const row of attachRows) {
+        await deleteObject(row.storageKey)
+        await tx.delete(attachments).where(eq(attachments.id, row.id))
+      }
       await tx.update(invoices).set({ status: 'void' }).where(eq(invoices.id, data.id))
-      await reverseInvoiceJournal(tx, {
-        invoiceId: data.id,
-        invoiceNumber: inv.number,
-        subtotalCents: inv.subtotalCents,
-        date: todayISO(),
-      })
-    })
-    return { ok: true }
-  })
+      const [current] = await tx
+        .select({ subtotalCents: invoices.subtotalCents, issuedOn: invoices.issuedOn })
+        .from(invoices)
+        .where(eq(invoices.id, data.id))
+      if (!current) throw new Error('Invoice not found during reversal.')
+
+       await reverseInvoiceJournal(tx, {
+         invoiceId: data.id,
+         invoiceNumber: inv.number,
+         subtotalCents: current.subtotalCents,
+         date: current.issuedOn,
+       })
+     })
+     return { ok: true }
+   })

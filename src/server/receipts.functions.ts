@@ -230,7 +230,7 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
       currentInv.autoCreated && Number(receiptCountOnCurrent?.c ?? 0) === 1
 
     await db.transaction(async (tx) => {
-      await postJournalSync(tx, {
+      const reversalId = await postJournalSync(tx, {
         date: r.receivedOn,
         memo: `Reverse payment ${r.id}`,
         source: 'reversal',
@@ -240,6 +240,26 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
           { accountCode: ACCT.CASH, creditCents: r.amountCents },
         ],
       })
+      const { journalEntries } = await import('~/db/schema')
+      const { desc, isNull } = await import('drizzle-orm')
+      const [original] = await tx
+        .select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(
+          and(
+            eq(journalEntries.source, 'cash_receipt'),
+            eq(journalEntries.sourceId, r.id),
+            isNull(journalEntries.reversedById),
+          ),
+        )
+        .orderBy(desc(journalEntries.createdAt))
+        .limit(1)
+      if (original) {
+        await tx
+          .update(journalEntries)
+          .set({ reversedById: reversalId })
+          .where(eq(journalEntries.id, original.id))
+      }
 
       if (shouldCascade) {
         await cascadeAutoInvoiceAmount(tx, {
@@ -326,11 +346,24 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
       .where(eq(cashReceipts.id, data.id))
     if (!r) throw new Error('Receipt not found.')
 
-    const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
-    await deleteAttachmentsForSource('cash_receipt', data.id)
-
     await db.transaction(async (tx) => {
-      await postJournalSync(tx, {
+      const { attachments } = await import('~/db/schema')
+      const { and } = await import('drizzle-orm')
+      const { deleteObject } = await import('~/lib/storage.server')
+      const attachRows = await tx
+        .select()
+        .from(attachments)
+        .where(
+          and(
+            eq(attachments.sourceType, 'cash_receipt'),
+            eq(attachments.sourceId, data.id),
+          ),
+        )
+      for (const row of attachRows) {
+        await deleteObject(row.storageKey)
+        await tx.delete(attachments).where(eq(attachments.id, row.id))
+      }
+      const reversalId = await postJournalSync(tx, {
         date: r.receivedOn,
         memo: `Reverse payment ${r.id}`,
         source: 'reversal',
@@ -340,6 +373,26 @@ export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requ
           { accountCode: ACCT.CASH, creditCents: r.amountCents },
         ],
       })
+      const { journalEntries } = await import('~/db/schema')
+      const { desc, isNull } = await import('drizzle-orm')
+      const [original] = await tx
+        .select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(
+          and(
+            eq(journalEntries.source, 'cash_receipt'),
+            eq(journalEntries.sourceId, r.id),
+            isNull(journalEntries.reversedById),
+          ),
+        )
+        .orderBy(desc(journalEntries.createdAt))
+        .limit(1)
+      if (original) {
+        await tx
+          .update(journalEntries)
+          .set({ reversedById: reversalId })
+          .where(eq(journalEntries.id, original.id))
+      }
       await tx.delete(cashReceipts).where(eq(cashReceipts.id, data.id))
       await recalcInvoiceStatusSync(tx, r.invoiceId)
     })

@@ -1,10 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { auth, oidcEnabled } from '~/lib/auth'
-import { countUsers } from '~/db/user-count'
 
 async function guardSignUp(request: Request): Promise<Response | null> {
   const url = new URL(request.url)
   if (!url.pathname.includes('/sign-up/email')) return null
+  const { countUsers } = await import('~/db/user-count')
   if ((await countUsers()) === 0) return null
   return Response.json(
     {
@@ -16,6 +15,7 @@ async function guardSignUp(request: Request): Promise<Response | null> {
 }
 
 async function guardEmailSignIn(request: Request): Promise<Response | null> {
+  const { oidcEnabled } = await import('~/lib/auth')
   if (!oidcEnabled) return null
   const url = new URL(request.url)
   if (!url.pathname.includes('/sign-in/email')) return null
@@ -32,6 +32,7 @@ async function handleAuth(request: Request) {
   const blocked =
     (await guardSignUp(request)) ?? (await guardEmailSignIn(request))
   if (blocked) return blocked
+  const { auth } = await import('~/lib/auth')
   return auth.handler(request)
 }
 
