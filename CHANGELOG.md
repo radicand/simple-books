@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.15](https://github.com/radicand/simple-books/compare/v0.1.14...v0.1.15) (2026-06-24)
+
+
+### Security
+
+* enforce server-only imports, strengthen attachment sanitization, and audit journal reversals ([261a4e1](https://github.com/radicand/simple-books/commit/261a4e1d9eb2a779530f026ee0010f615b26a78b))
+
+### Dependencies
+
+* bump @aws-sdk packages to 3.1053.0 ([47ea04a](https://github.com/radicand/simple-books/commit/47ea04abe1f0cdbd97ca1d4f26c9d8b8a7deaed0))
+* bump @biomejs/biome to 2.5.0 ([c57579f](https://github.com/radicand/simple-books/commit/c57579f7c77fb14e4b8b10fb09b2c7bea0f72cc2))
+* bump @libsql/client to 0.17.4 ([61f75b8](https://github.com/radicand/simple-books/commit/61f75b8c62b5c64b46b41d5798223adfb27268d1))
+* bump oven/bun Docker image to 1.3.14-alpine ([23384c3](https://github.com/radicand/simple-books/commit/23384c3f1ba0f35cc9f6ce6fdebfdc35d8edddbf))
+* bump react group packages ([a13eb10](https://github.com/radicand/simple-books/commit/a13eb1058f7e37da5c6e3ba7c72c2c3fdc5cf73c))
+* bump tanstack group packages to latest minor ([f838a20](https://github.com/radicand/simple-books/commit/f838a2042b5d0f82879fa87e7ece99df9c1fb959))
+* bump dev-tooling group packages ([374312d](https://github.com/radicand/simple-books/commit/374312d0d1f52e8169eb48fcba4356d26b4db86f8))
+* upgrade GitHub Actions: checkout to v7 ([c18b9bc](https://github.com/radicand/simple-books/commit/c18b9bc7e9c6f22a0019ecf854ffa3c64e97a38b))
+
 ## [0.1.14](https://github.com/radicand/simple-books/compare/v0.1.13...v0.1.14) (2026-05-25)
 
 
