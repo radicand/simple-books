@@ -1,3 +1,4 @@
+import '@tanstack/react-start/server-only'
 import { count } from 'drizzle-orm'
 import { db } from './client'
 import { user } from './auth-schema'

@@ -123,10 +123,24 @@ export const deleteMileage = createServerFn({ method: 'POST' })
       .from(mileageEntries)
       .where(eq(mileageEntries.id, data.id))
     if (!m) throw new Error('Mileage entry not found.')
-    const { deleteAttachmentsForSource } = await import('~/server/attachments.server')
-    await deleteAttachmentsForSource('mileage', data.id)
     await db.transaction(async (tx) => {
-      await postJournalSync(tx, {
+      const { attachments } = await import('~/db/schema')
+      const { and } = await import('drizzle-orm')
+      const { deleteObject } = await import('~/lib/storage.server')
+      const attachRows = await tx
+        .select()
+        .from(attachments)
+        .where(
+          and(
+            eq(attachments.sourceType, 'mileage'),
+            eq(attachments.sourceId, data.id),
+          ),
+        )
+      for (const row of attachRows) {
+        await deleteObject(row.storageKey)
+        await tx.delete(attachments).where(eq(attachments.id, row.id))
+      }
+      const reversalId = await postJournalSync(tx, {
         date: m.tripDate,
         memo: `Reverse mileage ${m.id}`,
         source: 'reversal',
@@ -136,6 +150,26 @@ export const deleteMileage = createServerFn({ method: 'POST' })
           { accountCode: ACCT.VEHICLE_EXPENSE, creditCents: m.amountCents },
         ],
       })
+      const { journalEntries } = await import('~/db/schema')
+      const { desc, isNull } = await import('drizzle-orm')
+      const [original] = await tx
+        .select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(
+          and(
+            eq(journalEntries.source, 'mileage'),
+            eq(journalEntries.sourceId, m.id),
+            isNull(journalEntries.reversedById),
+          ),
+        )
+        .orderBy(desc(journalEntries.createdAt))
+        .limit(1)
+      if (original) {
+        await tx
+          .update(journalEntries)
+          .set({ reversedById: reversalId })
+          .where(eq(journalEntries.id, original.id))
+      }
       await tx.delete(mileageEntries).where(eq(mileageEntries.id, data.id))
     })
     return { ok: true }
@@ -168,7 +202,7 @@ export const updateMileage = createServerFn({ method: 'POST' })
     if (amountCents <= 0) throw new Error('Computed mileage amount is zero.')
 
     await db.transaction(async (tx) => {
-      await postJournalSync(tx, {
+      const reversalId = await postJournalSync(tx, {
         date: m.tripDate,
         memo: `Reverse mileage ${m.id}`,
         source: 'reversal',
@@ -178,6 +212,26 @@ export const updateMileage = createServerFn({ method: 'POST' })
           { accountCode: ACCT.VEHICLE_EXPENSE, creditCents: m.amountCents },
         ],
       })
+      const { journalEntries } = await import('~/db/schema')
+      const { and, desc, isNull } = await import('drizzle-orm')
+      const [original] = await tx
+        .select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(
+          and(
+            eq(journalEntries.source, 'mileage'),
+            eq(journalEntries.sourceId, m.id),
+            isNull(journalEntries.reversedById),
+          ),
+        )
+        .orderBy(desc(journalEntries.createdAt))
+        .limit(1)
+      if (original) {
+        await tx
+          .update(journalEntries)
+          .set({ reversedById: reversalId })
+          .where(eq(journalEntries.id, original.id))
+      }
       await tx
         .update(mileageEntries)
         .set({

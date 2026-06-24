@@ -52,7 +52,7 @@ export function buildStorageKey(
 }
 
 export function safeContentDispositionFilename(name: string): string {
-  const trimmed = name.trim().replace(/[\r\n";]/g, '_').slice(0, 200)
+  const trimmed = name.replace(/[\p{C}\r\n";/\\]/gu, '_').trim().slice(0, 200)
   const base = trimmed || 'attachment'
   const encoded = encodeURIComponent(base)
   return `attachment; filename="${base}"; filename*=UTF-8''${encoded}`

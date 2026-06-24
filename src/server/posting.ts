@@ -2,7 +2,7 @@
  * Posting engine. Every business event becomes a balanced journal entry.
  * Pure (no DB connection, no auth) — caller passes in an open Drizzle tx.
  */
-import { eq, like, max, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, like, max, sql } from 'drizzle-orm'
 import type { DB } from '~/db/client'
 import {
   journalEntries,
@@ -108,7 +108,7 @@ export async function reverseInvoiceJournal(
   tx: Parameters<Parameters<DB['transaction']>[0]>[0],
   args: { invoiceId: string; invoiceNumber: string; subtotalCents: number; date: string },
 ) {
-  await postJournalSync(tx, {
+  const reversalId = await postJournalSync(tx, {
     date: args.date,
     memo: `Reverse invoice ${args.invoiceNumber}`,
     source: 'reversal',
@@ -118,6 +118,24 @@ export async function reverseInvoiceJournal(
       { accountCode: ACCT.AR, creditCents: args.subtotalCents },
     ],
   })
+  const [original] = await tx
+    .select({ id: journalEntries.id })
+    .from(journalEntries)
+    .where(
+      and(
+        eq(journalEntries.source, 'invoice'),
+        eq(journalEntries.sourceId, args.invoiceId),
+        isNull(journalEntries.reversedById),
+      ),
+    )
+    .orderBy(desc(journalEntries.createdAt))
+    .limit(1)
+  if (original) {
+    await tx
+      .update(journalEntries)
+      .set({ reversedById: reversalId })
+      .where(eq(journalEntries.id, original.id))
+  }
 }
 
 export async function postInvoiceJournal(

@@ -1,23 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { eq } from 'drizzle-orm'
-import { auth } from '~/lib/auth'
 import { safeContentDispositionFilename } from '~/lib/attachment-security'
-import { db } from '~/db/client'
 import { attachments } from '~/db/schema'
-import {
-  getObjectBytes,
-  presignedGetUrl,
-} from '~/lib/storage.server'
 
 export const Route = createFileRoute('/api/attachments/$id')({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
+        const { auth } = await import('~/lib/auth')
         const session = await auth.api.getSession({ headers: request.headers })
         if (!session) {
           return new Response('Unauthorized', { status: 401 })
         }
 
+        const { db } = await import('~/db/client')
         const [row] = await db
           .select()
           .from(attachments)
@@ -26,6 +22,9 @@ export const Route = createFileRoute('/api/attachments/$id')({
           return new Response('Not found', { status: 404 })
         }
 
+        const { presignedGetUrl, getObjectBytes } = await import(
+          '~/lib/storage.server'
+        )
         const signed = await presignedGetUrl(row.storageKey)
         if (signed) {
           return Response.redirect(signed, 302)
