@@ -10,7 +10,8 @@ COPY . .
 RUN bun run build
 
 FROM oven/bun:1.3.14-alpine AS runtime
-RUN apk add --no-cache tini wget \
+RUN apk upgrade --no-cache \
+  && apk add --no-cache tini wget \
   && addgroup -g 1001 -S app \
   && adduser -u 1001 -S -G app app
 WORKDIR /app
