@@ -27,12 +27,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",
     "@aws-sdk/s3-request-presigner": "^3.1079.0",
-    "@better-auth/drizzle-adapter": "^1.6.11",
+    "@better-auth/drizzle-adapter": "^1.6.22",
     "@libsql/client": "^0.17.4",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-router": "^1.170.17",
     "@tanstack/react-start": "^1.168.27",
-    "better-auth": "^1.6.11",
+    "better-auth": "^1.6.22",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9",
     "react": "^19",
@@ -41,7 +41,8 @@
   },
   "overrides": {
     "undici": "7.28.0",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "@better-auth/core": "^1.6.22"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",
