@@ -7,4 +7,4 @@
 - `vite` 8, `@vitejs/plugin-react` 6
 - `tailwindcss` v4 (`@tailwindcss/vite`)
 - `drizzle-orm` 0.45+, `bun:sqlite`
-- `better-auth` 1.6+ with `genericOAuth` plugin
+- `better-auth` 1.7+ with `genericOAuth` plugin (`signIn.social`, callback `/api/auth/callback/:id`)

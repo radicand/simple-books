@@ -60,7 +60,7 @@ if (oidcConfigured && oidcIssuerUrl && oidcClientId && oidcClientSecret) {
           discoveryUrl: `${oidcIssuerUrl}/.well-known/openid-configuration`,
           redirectURI:
             process.env.OIDC_REDIRECT_URI ||
-            `${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/oauth2/callback/oidc`,
+            `${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/callback/oidc`,
           scopes: ['openid', 'email', 'profile'],
           pkce: true,
           mapProfileToUser: async (profile) => {
@@ -68,8 +68,9 @@ if (oidcConfigured && oidcIssuerUrl && oidcClientId && oidcClientSecret) {
               typeof profile.email === 'string' ? profile.email : undefined
             if (!raw) return profile
             const linkEmail = await resolveOidcLinkEmail(raw)
-            if (linkEmail === raw.toLowerCase()) return profile
-            return { ...profile, email: linkEmail }
+            const { id: _id, ...rest } = profile
+            if (linkEmail === raw.toLowerCase()) return rest
+            return { ...rest, email: linkEmail }
           },
         },
       ],

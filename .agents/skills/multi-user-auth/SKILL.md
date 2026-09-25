@@ -31,7 +31,7 @@ description: Documents bootstrap sign-up, OIDC-only login when configured, and s
 
 ## Better Auth
 
-`src/lib/auth.ts` — `genericOAuth` plugin when OIDC env vars set.
+`src/lib/auth.ts` — `genericOAuth` plugin when OIDC env vars set. Redirect URI is `<BETTER_AUTH_URL>/api/auth/callback/oidc`.
 
 ### OIDC sign-in / account linking
 

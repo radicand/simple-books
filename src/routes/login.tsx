@@ -72,8 +72,8 @@ function LoginPage() {
     setError(null)
     setBusy(true)
     try {
-      await authClient.signIn.oauth2({
-        providerId: 'oidc',
+      await authClient.signIn.social({
+        provider: 'oidc',
         callbackURL: '/dashboard',
         errorCallbackURL: '/login',
       })

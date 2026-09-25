@@ -77,7 +77,7 @@ and (if configured) the OIDC button.
 
 Fill in the four `OIDC_*` env vars in `.env`. The discovery URL is built
 from `OIDC_ISSUER_URL`. Register the redirect URI as
-`<BETTER_AUTH_URL>/api/auth/oauth2/callback/oidc` in your IdP.
+`<BETTER_AUTH_URL>/api/auth/callback/oidc` in your IdP.
 
 **SSO behavior (operators):** When OIDC is configured, successful sign-in
 from your IdP will **auto-provision** a new app user if that email is not
