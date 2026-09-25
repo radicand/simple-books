@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.0](https://github.com/radicand/simple-books/compare/v0.1.15...v0.2.0) (2026-09-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* OIDC redirect URI is now `<BETTER_AUTH_URL>/api/auth/callback/oidc`. Update the redirect URI in your identity provider before upgrading.
+
+### Features
+
+* upgrade Better Auth to 1.7 and refresh dependencies ([60fe4ba](https://github.com/radicand/simple-books/commit/60fe4baf600dd765843f9091ec41e716a41615fc))
+
+
+### Dependencies
+
+* bump AWS SDK to 3.1140.0, TanStack, React 19.3, Zod 4.6, Drizzle, and libSQL 0.18
+* bump Better Auth to 1.7.6
+* bump Bun image and CI to 1.4.2
+* bump undici to 7.29.1 and ws to 8.21.3
+* bump dev tooling (Biome 2.5.14, Vite 8.3, Playwright 1.63, Nitro beta)
+* bump Bitnami PostgreSQL chart to 18.7.0
+
 ## [0.1.15](https://github.com/radicand/simple-books/compare/v0.1.14...v0.1.15) (2026-06-24)
 
 
