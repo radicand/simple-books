@@ -33,7 +33,7 @@
     "@tanstack/react-router": "^1.170.39",
     "@tanstack/react-start": "^1.168.58",
     "better-auth": "^1.7.6",
-    "drizzle-orm": "^0.45.3",
+    "drizzle-orm": "^0.45.4",
     "postgres": "^3.4.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
