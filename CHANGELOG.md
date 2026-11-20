@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/radicand/simple-books/compare/v0.2.0...v0.2.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **helm:** sync Chart.lock with postgresql 18.7.0 ([3a43401](https://github.com/radicand/simple-books/commit/3a43401eeb3f57ced0f78ad5f6dc706ecbff529b))
+
 ## [0.2.0](https://github.com/radicand/simple-books/compare/v0.1.15...v0.2.0) (2026-09-24)
 
 
