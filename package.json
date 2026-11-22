@@ -44,7 +44,7 @@
     "ws": "8.21.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.14",
+    "@biomejs/biome": "^2.6.8",
     "@playwright/test": "^1.65.1",
     "@tailwindcss/vite": "^4.3.5",
     "@tanstack/router-devtools": "^1.167.2",
