@@ -30,7 +30,7 @@ export const listServices = createServerFn({ method: 'GET' }).middleware([requir
 )
 
 export const createService = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => createSchema.parse(d))
+  .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -48,7 +48,7 @@ export const createService = createServerFn({ method: 'POST' }).middleware([requ
   })
 
 export const updateService = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .validator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -68,7 +68,7 @@ export const updateService = createServerFn({ method: 'POST' }).middleware([requ
   })
 
 export const toggleService = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string(), active: z.boolean() }).parse(d),
   )
   .handler(async ({ data }) => {

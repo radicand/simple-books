@@ -4,7 +4,7 @@ import { requireAuthMiddleware } from '~/lib/auth.functions'
 
 export const listAttachments = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         sourceType: z.enum(['invoice', 'cash_receipt', 'mileage']),
@@ -29,7 +29,7 @@ export const listAttachments = createServerFn({ method: 'POST' })
 
 export const deleteAttachment = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { attachments } = await import('~/db/schema')
