@@ -20,7 +20,7 @@ export const listMileageRates = createServerFn({ method: 'GET' })
 
 export const upsertMileageRate = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         taxYear: z.number().int().min(2000).max(2100),
@@ -44,7 +44,7 @@ export const upsertMileageRate = createServerFn({ method: 'POST' })
 
 export const getMileageRateForDate = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ tripDate: z.string() }).parse(d),
   )
   .handler(async ({ data }) => {

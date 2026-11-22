@@ -5,7 +5,7 @@ import { ACCT } from '~/server/posting'
 import { todayISO } from '~/lib/date'
 
 export const getBalanceSheet = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ asOf: z.string().optional() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -70,7 +70,7 @@ export const getBalanceSheet = createServerFn({ method: 'GET' }).middleware([req
   })
 
 export const getCashFlow = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ from: z.string(), to: z.string() }).parse(d),
   )
   .handler(async ({ data }) => {

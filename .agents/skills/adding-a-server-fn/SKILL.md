@@ -16,7 +16,7 @@ const inputSchema = z.object({ name: z.string().min(1).max(120) })
 
 export const createFoo = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => inputSchema.parse(d))
+  .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { db } = await import('~/db/client')
     const { someTable } = await import('~/db/schema')
@@ -33,7 +33,7 @@ export const createFoo = createServerFn({ method: 'POST' })
 - **Auth via middleware** — `requireAuthMiddleware` injects `session` into `context` and throws 401 if missing. Keeps `*.functions.ts` free of server-only static imports.
 - **DB and server-only modules** — `await import('~/db/client')` inside the handler body only.
 - **No plain server helpers in `*.functions.ts`** — routes import these files for loaders; the client bundle analyzes the whole module. Put shared server logic in `*.server.ts` and dynamic-import it from handlers or API routes only.
-- Use `z.parse` inside `inputValidator` for typed callers.
+- Use `z.parse` inside `validator` for typed callers.
 - Mutations: `method: 'POST'`. Reads: `method: 'GET'`.
 - Return JSON-serializable data — Date, Map, Set will not round-trip.
 - Do NOT trust route `beforeLoad` for authorization; middleware re-checks every RPC.

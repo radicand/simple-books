@@ -114,7 +114,7 @@ Attack angles:
 ### Step 4 — Injection & unsafe parsing
 
 - Drizzle: prefer typed builders; flag dynamic `sql` fragments with user input
-- `z.parse` bypass: `inputValidator` missing or `as any` on `data`
+- `z.parse` bypass: `validator` missing or `as any` on `data`
 - `JSON.parse` on untrusted blobs; `structuredClone` of request objects with prototype pollution vectors in dependencies
 - Path traversal: `storageKey`, `file.name`, `join(UPLOAD_DIR, storageKey)` — reject `..`, absolute paths, odd encodings
 

@@ -75,8 +75,8 @@ See [adding-a-server-fn](../adding-a-server-fn/SKILL.md) for the RPC recipe.
   and `bun:sqlite` behind it.
 - Always prefix Vite with `bun --bun` (`bun --bun vite dev`). Without it Bun
   shells to Node.
-- `serverFn({ method: 'POST' }).inputValidator((d) => z.parse(d)).handler(...)`
-  — `inputValidator` replaced the old `.validator` in 1.168+.
+- `createServerFn({ method: 'POST' }).validator((d) => z.parse(d)).handler(...)`
+  — `.validator()` is the current API; `inputValidator` was removed in 1.169.
 - Auth **must** be enforced inside each `createServerFn` handler (or via
   middleware). Route `beforeLoad` does not protect the RPC.
 - Use `getRequest()` from `@tanstack/react-start/server` to read headers.

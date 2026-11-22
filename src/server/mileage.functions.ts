@@ -54,7 +54,7 @@ export const listMileage = createServerFn({ method: 'GET' })
 
 export const getMileage = createServerFn({ method: 'GET' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { mileageEntries } = await import('~/db/schema')
@@ -69,7 +69,7 @@ export const getMileage = createServerFn({ method: 'GET' })
 
 export const createMileage = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => createSchema.parse(d))
+  .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { mileageEntries } = await import('~/db/schema')
@@ -112,7 +112,7 @@ export const createMileage = createServerFn({ method: 'POST' })
 
 export const deleteMileage = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { mileageEntries } = await import('~/db/schema')
@@ -177,7 +177,7 @@ export const deleteMileage = createServerFn({ method: 'POST' })
 
 export const updateMileage = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => createSchema.extend({ id: z.string() }).parse(d))
+  .validator((d: unknown) => createSchema.extend({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { mileageEntries } = await import('~/db/schema')

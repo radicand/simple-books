@@ -49,7 +49,7 @@ export const listReceipts = createServerFn({ method: 'GET' }).middleware([requir
 
 export const getReceipt = createServerFn({ method: 'GET' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { cashReceipts, customers, invoices } = await import('~/db/schema')
@@ -77,7 +77,7 @@ export const getReceipt = createServerFn({ method: 'GET' })
   })
 
 export const openInvoicesForCustomer = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         customerId: z.string(),
@@ -116,7 +116,7 @@ export const openInvoicesForCustomer = createServerFn({ method: 'GET' }).middlew
   })
 
 export const createReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => createSchema.parse(d))
+  .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -194,7 +194,7 @@ export const createReceipt = createServerFn({ method: 'POST' }).middleware([requ
   })
 
 export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .validator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { cashReceipts, invoices } = await import('~/db/schema')
@@ -333,7 +333,7 @@ export const updateReceipt = createServerFn({ method: 'POST' }).middleware([requ
   })
 
 export const deleteReceipt = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')

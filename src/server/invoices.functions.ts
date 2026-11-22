@@ -97,7 +97,7 @@ export const listInvoices = createServerFn({ method: 'GET' }).middleware([requir
 })
 
 export const getInvoice = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -141,7 +141,7 @@ export const getInvoice = createServerFn({ method: 'GET' }).middleware([requireA
   })
 
 export const createInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => createSchema.parse(d))
+  .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -180,7 +180,7 @@ export const createInvoice = createServerFn({ method: 'POST' }).middleware([requ
   })
 
 export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .validator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data }) => {
     const { db } = await import('~/db/client')
     const { invoices, invoiceLines, cashReceipts } = await import('~/db/schema')
@@ -271,7 +271,7 @@ export const updateInvoice = createServerFn({ method: 'POST' }).middleware([requ
   })
 
 export const voidInvoice = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')

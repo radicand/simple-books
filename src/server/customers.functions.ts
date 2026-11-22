@@ -20,7 +20,7 @@ export const listCustomers = createServerFn({ method: 'GET' }).middleware([requi
 )
 
 export const getCustomer = createServerFn({ method: 'GET' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => z.object({ id: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -32,7 +32,7 @@ export const getCustomer = createServerFn({ method: 'GET' }).middleware([require
   })
 
 export const createCustomer = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => upsertSchema.parse(d))
+  .validator((d: unknown) => upsertSchema.parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
@@ -48,7 +48,7 @@ export const createCustomer = createServerFn({ method: 'POST' }).middleware([req
   })
 
 export const updateCustomer = createServerFn({ method: 'POST' }).middleware([requireAuthMiddleware])
-  .inputValidator((d: unknown) => upsertSchema.required({ id: true }).parse(d))
+  .validator((d: unknown) => upsertSchema.required({ id: true }).parse(d))
   .handler(async ({ data }) => {
     // auth enforced by requireAuthMiddleware
     const { db } = await import('~/db/client')
