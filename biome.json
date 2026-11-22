@@ -10,7 +10,8 @@
       "**",
       "!!src/routeTree.gen.ts",
       "!!drizzle/**/meta",
-      "!!deploy/helm/simple-books/charts"
+      "!!deploy/helm/simple-books/charts",
+      "!!deploy/helm/simple-books/templates/**"
     ]
   },
   "formatter": {
