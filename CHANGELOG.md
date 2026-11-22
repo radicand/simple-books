@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/radicand/simple-books/compare/v0.2.1...v0.2.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* **sec:** bump deps ([9f902eb](https://github.com/radicand/simple-books/commit/9f902ebe4710517d91cca8f349dec588e3dbf65c))
+
 ## [0.2.1](https://github.com/radicand/simple-books/compare/v0.2.0...v0.2.1) (2026-11-20)
 
 
